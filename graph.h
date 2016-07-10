@@ -28,15 +28,19 @@ int pair_to_index(int i, int j)
 {
     // NOTE: We can replace the if statement with bit manipulation techniques for computing min and max.
     // See for instance http://graphics.stanford.edu/~seander/bithacks.html#IntegerMinOrMax
+    
+    /*
+     * 2016-07-10  Something is wrong with this code when i and j are out of order!
     register int d;
     d=(j-i) & ((j-i)>>(sizeof(int)*8-1));  // d=j-i if j<i and 0 otherwise; the signed right shift fills in the sign bit
     return binomial2(j+d)+i+d;
-    /*
+    */
+    //*
     if (i<j)
         return binomial2(j)+i;
     else
         return binomial2(i)+j;
-    */
+    //*/
 }
 
 
@@ -75,6 +79,7 @@ public:
     UndirectedGraph();  // create an unallocated graph, n=-1
     UndirectedGraph(int n);  // create an empty graph with n vertices
     UndirectedGraph(char *g6);  // create a graph from the given graph6 string
+    UndirectedGraph(UndirectedGraph *G, int k);  // create an induced subgraph of G on the vertices 0..k-1
     ~UndirectedGraph();
     
     virtual void allocate(int n);
@@ -92,22 +97,35 @@ public:
 };
 
 
-UndirectedGraph::UndirectedGraph()
+UndirectedGraph::UndirectedGraph()  // create an unallocated graph, n=-1
 {
     n=-1;
 }
 
 
-UndirectedGraph::UndirectedGraph(int n)
+UndirectedGraph::UndirectedGraph(int n)  // create an empty graph with n vertices
 {
-    allocate(n);  // will check if already allocated
+    this->n=-1;
+    allocate(n);  // We want to call allocate in case a derived class needs to setup additional data structures.
     zero_adj();
 }
 
 
-UndirectedGraph::UndirectedGraph(char *g6)
+UndirectedGraph::UndirectedGraph(char *g6)  // create a graph from the given graph6 string
 {
     read_graph6_string(g6);
+}
+
+
+UndirectedGraph::UndirectedGraph(UndirectedGraph *G, int k)  // create an induced subgraph of G on the vertices 0..k-1
+{
+    this->n=-1;
+    allocate(k);
+    
+    // We need to copy the adjacencies from G to the new graph.
+    // By the magic of colex order, this is the first nchoose2 elements of the adj matrix.
+    for (int index=nchoose2-1; index>=0; index--)  // counting down is faster because the condition is testing against 0
+        adj[index]=G->adj[index];
 }
 
 
@@ -128,7 +146,7 @@ void UndirectedGraph::allocate(int n)
         nchoose2=binomial2(n);
         adj=new int[nchoose2];
     }
-    //else  // n has not changed and the the data structures are already allocated
+    //else  // n has not changed and the data structures are already allocated
     //    ;  // nothing to do
 }
 
@@ -299,13 +317,32 @@ void UndirectedGraph::print_adj_matrix()
     int i,j;
 
     printf("Graph has %d vertices.\n",n);
+    
+    // print column headings, mod 100
+    for (j=0; j<n; j++)
+        if (j%10==0)
+            printf(" %1d",(j/10)%10);
+        else
+            printf("  ");
+    printf("\n");
+    
+    // print column headings, mod 10
+    for (j=0; j<n; j++)
+        printf(" %1d",j%10);
+    printf("\n");
+    
     for (i=0; i<n; i++)
     {
         for (j=0; j<n; j++)
-            if (j<=i)
+            if (0 && j<=i)
                 printf("  ");
             else
-                printf(" %1d",get_adj_sorted(i,j));
+                //printf(" %1d",get_adj_sorted(i,j));
+                printf(" %1d",get_adj(i,j));  // not sorted if the entire adjacency matrix
+            
+        // print vertex names at the end of the rows
+        printf(" >%2d",i);
+        
         printf("\n");
     }
 }

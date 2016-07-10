@@ -6,16 +6,23 @@
 
 
 // We read lines in from stdin.
-// The first line should have the format "7,5,graph6", where 7 is the maximum number of colors to use, 5 is the number of colors to precolor, and graph6 is the graph6 string for the graph.
-// We precolor (properly) the vertices 0..num_verts_to_precolor-1, and then see if the coloring extends to the rest of the vertices.
-// The second line indicates a root coloring to start with; colors separated by commas.  This is for parallelizing the checking.
-// The third line indicates a comma-separated list of vertices that are each in an orbit with the previous vertex.  Hence for such a vertex, it should have a color greater than the previous vertex.  This partially deals with symmetry (particularly the consecutive vertices that are leaves adjacent to the same stem vertex).
+// Each line should have the format "7,5,graph6", where 7 is the maximum number of colors to use, and 5 is the number of colors to precolor.  Note that there cannot be spaces.
+// If a line starts with '>', then it is treated as a comment.
 
+// Each line presents a precoloring extension problem for a specific graph.  We attempt to precolor (properly) the vertices 0..num_verts_to_precolor-1, and then see if the coloring extends to the rest of the vertices.
+
+/* Command line parameters can be used for parallelization.
+ * The system used is inspired by that used in Brendan McKay's geng and in Brinkmann and McKay's plantri.
+ * -m specifies a modulus, and the search tree is split into roughly m pieces to examine.
+ * This is done by chopping the search tree at a given height (given by the variable splitlevel), 
+ * counting the nodes (ie, precolorings) at that level, and only expanding those with the specified residue.
+ * One advantage is that modulo classes work as expected, in that 1 (mod 4) and 3 (mod 4) gives 1 (mod 2).
+ */
 
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <unistd.h>  // to use getopt to parse the command line
 #include "graph.h"
 
 
@@ -33,8 +40,12 @@ void print_binary(BIT_MASK x, int num_bits)
 }
 
 
-int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
-           int num_verts_root_coloring, int *root_coloring, BIT_MASK vertices_in_orbit_with_previous)
+long long int verify
+          (int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
+           int res, int mod, int splitlevel,
+           BIT_MASK vertices_in_orbit_with_previous,
+           long long int *count_precolorings_to_return  // to be returned out
+          )
 {
     int n=G->n;  // the total number of vertices in the graph
     int *c=new int[n];  // the color on each vertex
@@ -45,24 +56,25 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
     
+    int odometer;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
     
     // We will color the vertices with the colors 0..max_num_colors-1.
     // In the loop, we attempt to color the vertex with the color c[v].
-    // Incrementing the color will occur at the beginning of the loop.
+    // Incrementing the color will occur later if c[v] is not valid for v.
     
-    // We deal with symmetry of colors in the following way:
+    // We deal with symmetry of colors in the following naive way:
     // We assume that vertex 0 is colored 0.
     // num_colors_previously_used[v] means that on vertices 0..v-1, 
     //             only colors 0..num_colors_previously_used[v]-1 are used.
     // When assigning a color to v, we will only go up to num_colors_previously_used[v] (ie, a new color).
     
     
-    // to speed up testing if neighbors of v are colored with the proposed c[v]
+    // We use bit masks to speed up testing if neighbors of v are colored with the proposed c[v].
     BIT_MASK *nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the (previous) neighbors of each vertex
-    BIT_MASK *color_mask=new BIT_MASK[max_num_colors];  // indicates if a given vertex is colored with that color; we will still need c[v] to index the color_mask array
+    BIT_MASK *color_mask=new BIT_MASK[max_num_colors];  // indexed by color; we still need c[v] to index the color_mask array
+            // the v-th bit of color_mask[i] indicates if v is colored with color i.
     BIT_MASK cur_mask;  // a single bit set in the position corresponding to the current vertex, v
     BIT_MASK mask_extended_vertices;  // a mask to clear the colors on vertices beyond the precolored vertices
-    BIT_MASK test_mask;
     
     //printf("Initializing bit masks...\n");
     // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
@@ -82,65 +94,27 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
     //printf("Done initializing color bit masks.\n");
     
     
-    // if num_verts_to_precolor>=n, this signals that we're generating root colorings.
-    // For the code later to work properly when advancing past the root coloring, we need num_verts_to_precolor=n.
-    if (num_verts_to_precolor>=n)
-        num_verts_to_precolor=n;
-    
-    
     // initialization
-    if (num_verts_root_coloring==0)  // no vertices colored in the root coloring
-    {
-        c[0]=0;  // we can assume that vertex 0 is colored 0
-        num_colors_previously_used[0]=0;
-        cur_mask=1;
-        color_mask[0]|=cur_mask;  // the low bit (vertex 0) is set for color 0
-        v=1;
-        cur_mask<<=1;
-        c[v]=0;  // need to start
-        color_mask[0]|=cur_mask;
-        num_colors_previously_used[v]=1;
-        
-        // for initialization purposes, we can assume that vertex 0 is part of the root coloring, since vertex 0 is always colored 0.
-        // This has some convenience, as we may assume that v is always positive, and hence c[v-1] is not a problem.
-        num_verts_root_coloring=1;
-    }
-    else
-        // initialize with the vertices colored in the root coloring
-    {
-        cur_mask=1;
-        for (v=0; v<num_verts_root_coloring; v++)
-        {
-            c[v]=root_coloring[v];
-            color_mask[c[v]]|=cur_mask;
-            if (v==0)
-                num_colors_previously_used[0]=0;
-            else
-                num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
-                                                             // did we use a new color on v-1?
-                                              ? num_colors_previously_used[v-1]+1
-                                              : num_colors_previously_used[v-1]   );
-            
-            // increment
-            cur_mask<<=1;
-        }
-        
-        // set up the next vertex
-        // here, v=num_verts_root_coloring;
-        c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v should have a color greater than v-1
-                ? c[v-1]+1  // v=0 should never be in this set, so v-1 is valid
-                : 0;
-        num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
-                                                        // did we use a new color on v-1?
-                                        ? num_colors_previously_used[v-1]+1
-                                        : num_colors_previously_used[v-1]   );
-        
-    }
+    c[0]=0;  // we can assume that vertex 0 is colored 0
+    num_colors_previously_used[0]=0;
+    cur_mask=1;
+    color_mask[0]|=cur_mask;  // the low bit (vertex 0) is set for color 0
     
-    // v=num_verts_root_coloring; // this should be the starting condition
-    while (v>=num_verts_root_coloring)  // main loop
+    v=1;  // we'll actually start with vertex 1
+    cur_mask<<=1;
+    c[v]=0;  // first we'll trying coloring vertex 1 with color 0
+    color_mask[0]|=cur_mask;
+    num_colors_previously_used[v]=1;
+    
+    odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
+    
+    
+    while (v>0)  // main loop
     {
-        // When we start the loop, we are attempting to color v, and we need to check if c[v] is valid, and if not, increment it.
+        // When we start the loop, we are attempting to color v, and we need to check if c[v] is valid.
+        // If c[v] is valid, then we move to the next vertex.
+        // If not, we increment the color for v until we find a good color or run out of colors for v.
+        // Note that we will never change the color of vertex 0, which is always colored with color 0.
         
         /*
         if (1 || v<=14)
@@ -173,7 +147,7 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
             printf("\n");
             printf("and = %llu  test=%d\n",color_mask[c[v]] & nbrhd_mask[v],(color_mask[c[v]] & nbrhd_mask[v]) == 0);
             */
-            if ((color_mask[c[v]] & nbrhd_mask[v]) == 0)  // no previous neighbors of v are colored with c[v]
+            if ((color_mask[c[v]] & nbrhd_mask[v]) == 0)  // no previous neighbors of v are colored with c[v], so c[v] is a valid color for v
                     // note that bitwise & has lower precedence than equality testing ==
             {
                 color_mask[c[v]]|=cur_mask;  // set v's bit for the new color
@@ -186,6 +160,7 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
         
         /*
         // sanity test; make sure that c[v] and color_mask are consistent
+        BIT_MASK test_mask;
         for (i=0; i<=v; i++)
         {
             test_mask=1<<i;
@@ -202,12 +177,35 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
         
         if (good_color_found)
         {
-            v++;
-            cur_mask<<=1;
-            if (v<n)  // if v is still a vertex, then we reset its color.
+            
+            // This code allows for parallelization.
+            if (v==splitlevel)  // we need to check whether we should go further (deepen the search tree) or not
             {
-                c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v should have a color greater than v-1
-                     ? c[v-1]+1  // v=0 should never be in this set, so v-1 is valid
+                odometer--;
+                if (odometer<0)
+                    odometer=mod-1;  // reset the odometer
+                
+                //printf("v=%d splitlevel=%d odometer=%d residue=%d modulus=%d\n",v,splitlevel,odometer,res,mod);
+                
+                if (odometer!=res)  // we will not check this branch
+                {
+                    // we increment the color of v and continue the main loop
+                    color_mask[c[v]]&=~cur_mask;  // clear v's bit for the current color
+                    c[v]++;
+                    
+                    // and now we just want to loop again, checking this new color for v
+                    continue;
+                }
+            }
+            
+            
+            v++;  // we found a good color for v, so we advance to the next vertex so we can try to color it.
+            cur_mask<<=1;
+            
+            if (v<n)  // if v is a vertex needing to be colored, then we reset its color.
+            {
+                c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v is in orbit with the previous vertex, and so should have a color greater than v-1
+                     ? c[v-1]+1  // v=0 should never be in this set, so v-1 is a valid vertex, and the array index will not be out of bounds
                      : 0;
                 //color_mask[c[v]]|=cur_mask;  // set v's bit for the new color --- this is not needed
                 num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
@@ -231,22 +229,6 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
                     printf("\n");
                 }
                 
-                if (num_verts_to_precolor==n)  
-                    // This indicates that we are generating root colorings.
-                    // So we'll output the generated coloring.
-                {
-                    printf("R=");  // for Root coloring
-                    for (i=0; i<n; i++)
-                    {
-                        printf("%d",c[i]);
-                        if (i<n-1)
-                            printf(",");
-                    }
-                    printf("\n");
-                    
-                    // in this case, num_verts_to_precolor=n
-                }
-                
                 // we need to backtrack and advance to the next precoloring
                 v=num_verts_to_precolor-1;
                 cur_mask=1<<v;
@@ -258,7 +240,7 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
                 
             }
         }
-        else // we've gone too far in the colors and so need to backtrack
+        else // we've gone too far in the colors (no color is available for v) and so need to backtrack
         {
             // note that color_mask[c[v]] is not set (and c[v] is not valid)
             v--;
@@ -289,7 +271,7 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
             //    break;  // no more precolorings to check; but this will be handled by the condition in the while loop
         }
     }
-    printf("final count_precolorings=%lld\n",count_precolorings);
+    //printf("final count_precolorings=%lld\n",count_precolorings);
     
     delete nbrhd_mask;
     delete color_mask;
@@ -297,11 +279,83 @@ int verify(int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
     delete c;
     delete num_colors_previously_used;
     
+    *count_precolorings_to_return=count_precolorings;
     return num_precolorings_that_dont_extend;
 }
 
 
-int main()
+BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
+{
+    int n=G->n;  // the total number of vertices in the graph
+    int v;  // the current vertex
+    int i;
+    
+    BIT_MASK *closed_nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the closed neighborhood of each vertex
+    BIT_MASK vertices_in_orbit_with_previous=0;
+    
+    printf("Vertices in orbit with the previous vertex in the order: ");
+    // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
+    for (v=0; v<n; v++)
+    {
+        closed_nbrhd_mask[v]=0;
+        for (i=0; i<n; i++)
+            if (i==v)
+                closed_nbrhd_mask[v]|=(((BIT_MASK)1)<<i);  // we compute closed neighborhoods
+            else if (G->get_adj(i,v))  // note that i and v are not sorted
+                closed_nbrhd_mask[v]|=(((BIT_MASK)1)<<i);
+        
+        if ((v>0) && closed_nbrhd_mask[v]==closed_nbrhd_mask[v-1])
+        {
+            printf("%d,",v);
+            vertices_in_orbit_with_previous|=(1<<v);
+        }
+    }
+    printf("\n");
+    
+    delete closed_nbrhd_mask;
+    
+    return vertices_in_orbit_with_previous;
+}
+
+
+int splitlevel_heuristic
+       (int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
+        int mod
+       )
+{
+    UndirectedGraph *H;
+    long long int count_all_precolorings;
+    int level;
+    BIT_MASK vertices_in_orbit_with_previous;
+    
+    printf("Estimating the splitlevel to obtain roughly equal modulo classes.\n");
+    
+    for (level=6; level<num_verts_to_precolor; level++)
+    {
+        printf("Testing splitlevel=%d\n",level);
+        H=new UndirectedGraph(G,level);
+        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(H);
+        count_all_precolorings=0;
+        verify(max_num_colors,
+               H->n,  // all of the vertices of H are to be precolored
+               H,
+               0,1,H->n,
+               vertices_in_orbit_with_previous,
+               &count_all_precolorings
+              );
+        delete H;
+        
+        printf("count_all_precolorings=%lld\n",count_all_precolorings);
+        
+        if (count_all_precolorings > 100*mod)
+            // the constant 100 is fairly arbitrary
+            break;
+    }
+    return level;
+}
+
+
+int main(int argc, char *argv[])
 {
     const int max_line_length=1000;
     char line_in[max_line_length];
@@ -311,87 +365,118 @@ int main()
     int max_num_colors;
     int num_verts_to_precolor;
     
+    int res,mod,splitlevel_arg,splitlevel;  // for parallelizing
+    int opt;  // for parsing the command line
+    
     UndirectedGraph *G;
     G=new UndirectedGraph();
     
-    int *root_coloring;  // for initializing; used for distributing the computation
-    int num_verts_root_coloring;
     int i,j;
     BIT_MASK vertices_in_orbit_with_previous;
     
-    int count_bad;
+    long long int count_bad_precolorings,count_all_precolorings;
+    
+    
+    // defaults
+    splitlevel_arg=-1;
+    res=-1;
+    mod=-1;
+    
+    // parse the command line
+    while ((opt=getopt(argc,argv,"r:m:s:"))!=-1)  // the colons indicate the options take required arguments
+    {
+        switch (opt)
+        {
+            case 'r':
+                sscanf(optarg,"%d",&res);
+                break;
+            case 'm':
+                sscanf(optarg,"%d",&mod);
+                break;
+            case 's':
+                sscanf(optarg,"%d",&splitlevel_arg);
+                break;
+            case '?':
+                printf("Error parsing command line arguments; problem with option %c\n",optopt);
+                printf("USAGE: precolor_extend -r residue -m modulus [-s splitlevel]\n");
+                printf("-r and -m must be used together; -s can only be used if -r/-m also are.\n");
+                exit(8);
+            default:
+                ;
+        }
+    }
+    printf("Parallelization parameters set: res=%d mod=%d splitlevel_arg=%d\n",res,mod,splitlevel_arg);
+    
+    if ((res==-1) ^ (mod==-1))  // using bitwise xor here since there is no logical xor
+    {
+        printf("-r and -m must be used together\n");
+        exit(8);
+    }
+    if ((splitlevel_arg!=-1) && (mod==-1))
+    {
+        printf("-s can only be used if -r and -m also are.\n");
+        exit(8);
+    }
     
     // We read lines in from stdin.
-    // The first line should have the format "7,5,graph6", where 7 is the maximum number of colors to use, and 5 is the number of colors to precolor.
-    // We precolor (properly) the vertices 0..num_verts_to_precolor-1, and then see if the coloring extends to the rest of the vertices.
-    // The second line indicates a root coloring to start with; colors separated by commas.
-    // The third line indicates a comma-separated list of vertices that are each in an orbit with the previous vertex.  Hence for such a vertex, it should have a color greater than the previous vertex.  This partially deals with symmetry (particularly the consecutive vertices that are leaves adjacent to the same stem vertex).
+    // Each line should have the format "7,5,graph6", where 7 is the maximum number of colors to use, and 5 is the number of colors to precolor.  Note that there cannot be spaces.
+    // If a line starts with '>', then it is treated as a comment.
     
-    if (fgets(line_in,max_line_length,stdin)==NULL)  // problem reading in
+    while (fgets(line_in,max_line_length,stdin)!=0)
     {
-        printf("Can't read first line of input!\n");
-        exit(1);
+        if (line_in[0]=='>')  // treat this line as a comment
+            continue;
+        
+        cur=line_in;
+        // maybe use %n in scanf?  Yes!  %n will store in a variable how many characters have been read in.  We need to use an index then, instead of a char pointer.
+        sscanf(cur,"%d",&max_num_colors);
+        for ( ; *cur!=','; cur++); cur++;  // advance cur past the first entry and the comma
+        sscanf(cur,"%d",&num_verts_to_precolor);
+        for ( ; *cur!=','; cur++); cur++;  // advance cur past the second entry and the comma
+        G->read_graph6_string(cur);
+        
+        printf("Input read: max_num_colors=%d num_verts_to_precolor=%d n=%d\n",max_num_colors,num_verts_to_precolor,G->n);
+        printf(">>graph6<<%s",cur);  // newline still present in line_in
+        
+        if (G->n > 8*sizeof(BIT_MASK))
+        {
+            printf("The number n=%d of vertices in the graph is more than the number %d of bits in a word.",G->n,8*sizeof(BIT_MASK));
+            exit(9);
+        }
+        
+        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(G);
+            // compute the orbits before estimating the splitlevel, if necessary
+        
+        if (mod==-1)  // not using parallelization
+        {
+            splitlevel=G->n;  // will never reach this level
+            printf("not parallelizing\n");
+        }
+        else 
+        {
+            if (splitlevel_arg!=-1)
+                splitlevel=splitlevel_arg;
+            else
+                splitlevel=splitlevel_heuristic(max_num_colors,num_verts_to_precolor,G,
+                                                mod);
+            printf("parallelizing with splitlevel=%d\n",splitlevel);
+        }
+        
+        count_all_precolorings=0;
+        count_bad_precolorings=verify(max_num_colors,num_verts_to_precolor,G,
+                                      res,mod,splitlevel,
+                                      vertices_in_orbit_with_previous,
+                                      &count_all_precolorings
+                                     );
+        
+        printf("Number of all precolorings: %lld\n",count_all_precolorings);
+        printf("Number of bad precolorings: %lld\n",count_bad_precolorings);
     }
-    cur=line_in;
-    // maybe use %n in scanf?
-    sscanf(cur,"%d",&max_num_colors);
-    for ( ; *cur!=','; cur++); cur++;  // advance cur past the first entry and the comma
-    sscanf(cur,"%d",&num_verts_to_precolor);
-    for ( ; *cur!=','; cur++); cur++;  // advance cur past the second entry and the comma
-    G->read_graph6_string(cur);
-    
-    printf("max_num_colors=%d num_verts_to_precolor=%d n=%d\n",max_num_colors,num_verts_to_precolor,G->n);
-    printf(">>graph6<<%s",cur);  // newline still present in line_in
-    
-    if (fgets(line_in,max_line_length,stdin)==NULL)  // problem reading in
-    {
-        printf("Can't read second line of input!\n");
-        exit(2);
-    }
-    root_coloring=new int[G->n];
-    cur_index=0;
-    num_verts_root_coloring=0;
-    while (cur_index<strlen(line_in))  // fgets always null terminates the returned string
-    {
-        //printf("cur_index=%d strlen(line_in)=%d\n",cur_index,strlen(line_in));
-        sscanf(&line_in[cur_index],"%d%n",&root_coloring[num_verts_root_coloring],&j);
-        //printf("characters read j=%d line_in=%s\n",j,&line_in[cur_index]);
-        //printf("i=%d root_coloring=%d\n",num_verts_root_coloring,root_coloring[num_verts_root_coloring]);
-        num_verts_root_coloring++;
-        if (num_verts_root_coloring>=G->n)  // make sure we don't read too many
-            break;
-        cur_index+=j;  // the number of characters read by 
-        for ( ; cur_index<strlen(line_in) && line_in[cur_index]!=','; cur_index++); cur_index++;  // move past comma
-    }
-    
-    printf("Number of vertices in the root coloring=%d\n",num_verts_root_coloring);
-    if (num_verts_root_coloring>num_verts_to_precolor)  // this doesn't seem practical, but would it actually cause a problem?
-    {
-        printf("We can't have num_verts_root_coloring>num_verts_to_precolor!\n");
-        exit(2);
-    }
-
-    if (fgets(line_in,max_line_length,stdin)==NULL)  // problem reading in
-    {
-        printf("Can't read third line of input!\n");
-        exit(3);
-    }
-    vertices_in_orbit_with_previous=0;
-    cur_index=0;
-    while (cur_index<strlen(line_in))  // fgets always null terminates the returned string
-    {
-        sscanf(&line_in[cur_index],"%d%n",&i,&j);
-        printf("vertex in orbit with the previous vertex i=%d\n",i);
-        if (i>=0 && i<G->n)
-            vertices_in_orbit_with_previous|=1<<i;  // use a bit mask to indicate these vertices
-        cur_index+=j;  // the number of characters read by 
-        for ( ; cur_index<strlen(line_in) && line_in[cur_index]!=','; cur_index++); cur_index++;  // move past comma
-    }
-    
-    count_bad=verify(max_num_colors,num_verts_to_precolor,G,
-                     num_verts_root_coloring,root_coloring,vertices_in_orbit_with_previous);
-    printf("Number of bad precolorings: %d\n",count_bad);
     
     delete G;
-    delete root_coloring;
+    
+    if (count_bad_precolorings==0)
+        return 0;  // no bad precolorings found
+    else
+        return 1;  // normal operation, but bad precolorings found
 }
