@@ -22,6 +22,11 @@
  * 
  * Note that we make some assumptions here:
  * the splitlevel must be less than the number of vertices to precolor (why?  it seems it would be okay otherwise).
+ * 
+ * If m is really large compared to the number of precolorings, then splitlevel is set to the last precolored vertex.
+ * If the modulus is larger than the number of nodes at that level, the last residues (up to mod-1) are the ones that are actually examined, 
+ * since we start counting at the mod-1 and count down.
+ * 
  */
 
 
@@ -340,9 +345,10 @@ int splitlevel_heuristic
     
     printf("Estimating the splitlevel to obtain roughly equal modulo classes.\n");
     
-    for (level=6; level<num_verts_to_precolor; level++)
+    for (level=1; level<num_verts_to_precolor-1; level++)
+        // if there are not enough nodes in the search tree, we set the level to be the last precolored vertex, ie, num_verts_to_precolor-1
     {
-        printf("Testing splitlevel=%d\n",level);
+        //printf("Testing splitlevel=%d\n",level);
         H=new UndirectedGraph(G,level);
         vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(H);
         count_all_precolorings=0;
@@ -355,7 +361,7 @@ int splitlevel_heuristic
               );
         delete H;
         
-        printf("count_all_precolorings=%lld\n",count_all_precolorings);
+        //printf("count_all_precolorings=%lld\n",count_all_precolorings);
         
         if (count_all_precolorings > 100*mod)
             // the constant 100 is fairly arbitrary
