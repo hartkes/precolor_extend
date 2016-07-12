@@ -17,7 +17,7 @@ int binomial2(int n)
 {
     return ((n*n)-n)/2;  // this is the fastest calculation, faster than those below
     //return (n*(n-1))/2;
-    //return (n*(n-1))>>1;  // the compiler must be able to deal with /2 better
+    //return (n*(n-1))>>1;  // /2 is faster than >>1; the compiler must be able to deal with /2 better???
     //return ((n*n)-n)>>1;
 }
 

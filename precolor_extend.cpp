@@ -1,7 +1,7 @@
 
 // precolor_extend.cpp
 // C++ program to determine if every precoloring of a graph extends to a full proper coloring.
-// Written by Stephen Hartke
+// Copyright 2016 by Stephen Hartke.
 // Licensed under the GPL version 3.
 
 
@@ -16,7 +16,12 @@
  * -m specifies a modulus, and the search tree is split into roughly m pieces to examine.
  * This is done by chopping the search tree at a given height (given by the variable splitlevel), 
  * counting the nodes (ie, precolorings) at that level, and only expanding those with the specified residue.
+ * 
  * One advantage is that modulo classes work as expected, in that 1 (mod 4) and 3 (mod 4) gives 1 (mod 2).
+ * Note that there's a limit to this, as the number of nodes on the level being split is only 100*modulus.
+ * 
+ * Note that we make some assumptions here:
+ * the splitlevel must be less than the number of vertices to precolor (why?  it seems it would be okay otherwise).
  */
 
 
@@ -252,13 +257,18 @@ long long int verify
                     // We have backtracked to a precoloring without finding an extension that is a proper coloring
                     // So we print this precoloring to report the failure.
                     num_precolorings_that_dont_extend++;
-                    if (num_precolorings_that_dont_extend<100000)  // no point in printing more than 100 bad precolorings
+                    if (num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
                     {
                         printf("Bad precoloring, count=%5d, c: ",num_precolorings_that_dont_extend);
                         printf(" v=%d  c=",v);
                         for (i=0; i<=v; i++)  // only print the vertices that are precolored
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
+                    }
+                    else
+                    {
+                        printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
+                        exit(11);
                     }
                     count_precolorings++;
                 }
