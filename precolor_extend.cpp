@@ -113,15 +113,52 @@ long long int verify
     v=1;  // we'll actually start with vertex 1
     cur_mask<<=1;
     c[v]=0;  // first we'll trying coloring vertex 1 with color 0
-    color_mask[0]|=cur_mask;
+    // note that no color_mask bit is set for v=1 because we haven't tested the color yet (see comment in while loop that searches for a good color for v)
     num_colors_previously_used[v]=1;
     
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
     
+    if (1)  // putting in a root coloring for debugging purposes
+    {
+        int root_coloring[18]={0,1,2,3,4,0,4,5,4,5,0,5,4,5,1,3,2,3};
+        int num_verts_root_coloring=18;
+        
+        // clear up the previous initialization
+        color_mask[0]=0;
+        
+        cur_mask=1;
+        for (v=0; v<num_verts_root_coloring; v++)
+        {
+            c[v]=root_coloring[v];
+            color_mask[c[v]]|=cur_mask;
+            if (v==0)
+                num_colors_previously_used[0]=0;
+            else
+                num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
+                                                             // did we use a new color on v-1?
+                                              ? num_colors_previously_used[v-1]+1
+                                              : num_colors_previously_used[v-1]   );
+            
+            // increment
+            cur_mask<<=1;
+        }
+        
+        // set up the next vertex
+        // here, v=num_verts_root_coloring;
+        c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v should have a color greater than v-1
+                ? c[v-1]+1  // v=0 should never be in this set, so v-1 is valid
+                : 0;
+        num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
+                                                        // did we use a new color on v-1?
+                                        ? num_colors_previously_used[v-1]+1
+                                        : num_colors_previously_used[v-1]   );
+    }
+    
+    
     while (v>0)  // main loop
     {
-        // When we start the loop, we are attempting to color v, and we need to check if c[v] is valid.
+        // When we start the loop, we are attempting to color v with c[v], and we need to check if c[v] is valid.
         // If c[v] is valid, then we move to the next vertex.
         // If not, we increment the color for v until we find a good color or run out of colors for v.
         // Note that we will never change the color of vertex 0, which is always colored with color 0.
@@ -145,6 +182,7 @@ long long int verify
         // We check if c[v] is valid, and if not, increment it.
         good_color_found=0;  // at the moment, we don't know that c[v] is valid.
         while (c[v]<max_num_colors && c[v]<=num_colors_previously_used[v])
+                // we allow equality in the second test, since we'll allow c[v] to be a new color, ie num_colors_previously_used[v]
         {
             // When this loop is entered, no color_mask should have a color set for v.
             /*
@@ -216,7 +254,7 @@ long long int verify
             {
                 c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v is in orbit with the previous vertex, and so should have a color greater than v-1
                      ? c[v-1]+1  // v=0 should never be in this set, so v-1 is a valid vertex, and the array index will not be out of bounds
-                     : 0;
+                     : 0;  // otherwise, just start with the first color, color 0
                 //color_mask[c[v]]|=cur_mask;  // set v's bit for the new color --- this is not needed
                 num_colors_previously_used[v]=(c[v-1]==num_colors_previously_used[v-1]
                                                              // did we use a new color on v-1?
@@ -262,13 +300,14 @@ long long int verify
                     // We have backtracked to a precoloring without finding an extension that is a proper coloring
                     // So we print this precoloring to report the failure.
                     num_precolorings_that_dont_extend++;
-                    if (num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
+                    if (1 || num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
                     {
                         printf("Bad precoloring, count=%5d, c: ",num_precolorings_that_dont_extend);
                         printf(" v=%d  c=",v);
                         for (i=0; i<=v; i++)  // only print the vertices that are precolored
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
+                        exit(11);
                     }
                     else
                     {
