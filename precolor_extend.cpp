@@ -119,7 +119,7 @@ long long int verify
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
     
-    if (1)  // putting in a root coloring for debugging purposes
+    if (0)  // putting in a root coloring for debugging purposes
     {
         int root_coloring[18]={0,1,2,3,4,0,4,5,4,5,0,5,4,5,1,3,2,3};
         int num_verts_root_coloring=18;
@@ -300,14 +300,13 @@ long long int verify
                     // We have backtracked to a precoloring without finding an extension that is a proper coloring
                     // So we print this precoloring to report the failure.
                     num_precolorings_that_dont_extend++;
-                    if (1 || num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
+                    if (num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
                     {
                         printf("Bad precoloring, count=%5d, c: ",num_precolorings_that_dont_extend);
                         printf(" v=%d  c=",v);
                         for (i=0; i<=v; i++)  // only print the vertices that are precolored
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
-                        exit(11);
                     }
                     else
                     {
