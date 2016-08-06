@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>  // to use getopt to parse the command line
+#include <time.h>  // for reporting runtime
 #include "graph.h"
 
 
@@ -311,7 +312,7 @@ long long int verify
                     else
                     {
                         printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
-                        exit(11);
+                        break;
                     }
                     count_precolorings++;
                 }
@@ -430,6 +431,8 @@ int main(int argc, char *argv[])
     
     long long int count_bad_precolorings,count_all_precolorings;
     
+    clock_t start,end;  // for reporting CPU runtime
+    
     
     // defaults
     splitlevel_arg=-1;
@@ -481,6 +484,8 @@ int main(int argc, char *argv[])
         if (line_in[0]=='>')  // treat this line as a comment
             continue;
         
+        start=clock();  // record starting time
+        
         cur=line_in;
         // maybe use %n in scanf?  Yes!  %n will store in a variable how many characters have been read in.  We need to use an index then, instead of a char pointer.
         sscanf(cur,"%d",&max_num_colors);
@@ -525,6 +530,9 @@ int main(int argc, char *argv[])
         
         printf("Number of all precolorings: %lld\n",count_all_precolorings);
         printf("Number of bad precolorings: %lld\n",count_bad_precolorings);
+        
+        end=clock();
+        printf("CPU time used: %.3f seconds\n",((double)(end-start))/CLOCKS_PER_SEC);
     }
     
     delete G;
