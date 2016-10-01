@@ -165,7 +165,7 @@ long long int verify
         // Note that we will never change the color of vertex 0, which is always colored with color 0.
         
         /*
-        if (1 || v<=14)
+        if (v>=34) //(1 || v<=14)
         {
             printf(" v=%d  c=",v);
             for (i=0; i<=v; i++)
@@ -242,6 +242,8 @@ long long int verify
                     color_mask[c[v]]&=~cur_mask;  // clear v's bit for the current color
                     c[v]++;
                     
+                    //printf("v=%d splitlevel=%d odometer=%d residue=%d modulus=%d\n",v,splitlevel,odometer,res,mod);
+                    
                     // and now we just want to loop again, checking this new color for v
                     continue;
                 }
@@ -272,8 +274,8 @@ long long int verify
                 if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
                 {
                     printf("count_precolorings=%14lld",count_precolorings);
-                    printf(" v=%d c=",v);
-                    for (i=0; i<=v; i++)
+                    printf("  c=");
+                    for (i=0; i<num_verts_to_precolor; i++)
                         printf("%d:%d ",i,c[i]);
                     printf("\n");
                 }
@@ -303,8 +305,7 @@ long long int verify
                     num_precolorings_that_dont_extend++;
                     if (num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
                     {
-                        printf("Bad precoloring, count=%5d, c: ",num_precolorings_that_dont_extend);
-                        printf(" v=%d  c=",v);
+                        printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
                         for (i=0; i<=v; i++)  // only print the vertices that are precolored
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
@@ -358,10 +359,10 @@ BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
             else if (G->get_adj(i,v))  // note that i and v are not sorted
                 closed_nbrhd_mask[v]|=(((BIT_MASK)1)<<i);
         
-        if ((v>0) && closed_nbrhd_mask[v]==closed_nbrhd_mask[v-1])
+        if ((v>0) && (closed_nbrhd_mask[v]==closed_nbrhd_mask[v-1]))
         {
             printf("%d,",v);
-            vertices_in_orbit_with_previous|=(1<<v);
+            vertices_in_orbit_with_previous|=(((BIT_MASK)1)<<v);
         }
     }
     printf("\n");
