@@ -240,7 +240,7 @@ long long int verify
             
 //*
             // This code allows for parallelization.
-            if (v==splitlevel)  //(cur_mask & mask_bit_set_splitlevel)  // same as (v==splitlevel), but more efficient
+            if (cur_mask & mask_bit_set_splitlevel)  // same as (v==splitlevel), but more efficient
                 // we need to check whether we should go further (deepen the search tree) or not
             {
                 odometer--;
@@ -267,7 +267,7 @@ long long int verify
             v++;  // we found a good color for v, so we advance to the next vertex so we can try to color it.
             cur_mask<<=1;
             
-            if (v<n)  //(cur_mask & mask_first_n_bits)  // same as (v<n)
+            if (cur_mask & mask_first_n_bits)  // same as (v<n)
                 // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
                 // We reset its color.
             {
