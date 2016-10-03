@@ -86,6 +86,9 @@ long long int verify
             // the v-th bit of color_mask[i] indicates if v is colored with color i.
     BIT_MASK cur_mask;  // a single bit set in the position corresponding to the current vertex, v
     BIT_MASK mask_extended_vertices;  // a mask to clear the colors on vertices beyond the precolored vertices
+    BIT_MASK mask_first_n_bits;  // mask with first n positions set; used to test with cur_mask when v<n
+    BIT_MASK mask_bit_set_splitlevel;  // mask with one bit set in position splitlevel
+    
     
     //printf("Initializing bit masks...\n");
     // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
@@ -95,7 +98,7 @@ long long int verify
         for (i=v-1; i>=0; i--)
         {
             nbrhd_mask[v]<<=1;
-            nbrhd_mask[v]|=G->get_adj_sorted(i,v);  // set the low bit if i and v are adjacent
+            nbrhd_mask[v]|=(BIT_MASK)G->get_adj_sorted(i,v);  // set the low bit if i and v are adjacent
         }
     }
     //printf("Done initializing neighborhood bit masks.\n");
@@ -108,7 +111,7 @@ long long int verify
     // initialization
     c[0]=0;  // we can assume that vertex 0 is colored 0
     num_colors_previously_used[0]=0;
-    cur_mask=1;
+    cur_mask=(BIT_MASK)1;
     color_mask[0]|=cur_mask;  // the low bit (vertex 0) is set for color 0
     
     v=1;  // we'll actually start with vertex 1
@@ -116,6 +119,14 @@ long long int verify
     c[v]=0;  // first we'll trying coloring vertex 1 with color 0
     // note that no color_mask bit is set for v=1 because we haven't tested the color yet (see comment in while loop that searches for a good color for v)
     num_colors_previously_used[v]=1;
+    
+    mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
+    if (splitlevel==n)  // a splitlevel of n indicates no parallelization
+        mask_bit_set_splitlevel=0;
+    else
+        mask_bit_set_splitlevel=(1<<splitlevel);
+    printf("mask_bit_set_splitlevel=%0x, splitlevel=%d\n",mask_bit_set_splitlevel,splitlevel);
+    printf("mask_first_n_bits=%0x\n",mask_first_n_bits);
     
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
@@ -227,8 +238,10 @@ long long int verify
         if (good_color_found)
         {
             
+//*
             // This code allows for parallelization.
-            if (v==splitlevel)  // we need to check whether we should go further (deepen the search tree) or not
+            if (v==splitlevel)  //(cur_mask & mask_bit_set_splitlevel)  // same as (v==splitlevel), but more efficient
+                // we need to check whether we should go further (deepen the search tree) or not
             {
                 odometer--;
                 if (odometer<0)
@@ -248,12 +261,15 @@ long long int verify
                     continue;
                 }
             }
+//*/
             
             
             v++;  // we found a good color for v, so we advance to the next vertex so we can try to color it.
             cur_mask<<=1;
             
-            if (v<n)  // if v is a vertex needing to be colored, then we reset its color.
+            if (v<n)  //(cur_mask & mask_first_n_bits)  // same as (v<n)
+                // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
+                // We reset its color.
             {
                 c[v]=(cur_mask & vertices_in_orbit_with_previous)!=0  // vertex v is in orbit with the previous vertex, and so should have a color greater than v-1
                      ? c[v-1]+1  // v=0 should never be in this set, so v-1 is a valid vertex, and the array index will not be out of bounds
