@@ -192,7 +192,7 @@ void UndirectedGraph::read_graph6_string(char *g6)
             for (i=1; i<6; i++)  // 6 6-bit words for n
             {
                 cur++;
-                gn<<6;
+                gn<<=6;
                 gn+=*cur-63;
             }
         }
@@ -202,7 +202,7 @@ void UndirectedGraph::read_graph6_string(char *g6)
             for (i=1; i<3; i++)  // 3 6-bit words for n
             {
                 cur++;
-                gn<<6;
+                gn<<=6;
                 gn+=*cur-63;
             }
         }
@@ -273,7 +273,7 @@ void UndirectedGraph::write_graph6_string(char *g6, int length)
         *cur=126;
         cur++;
         
-        mask=63<<30;
+        mask=63<<30;  // this line is problematical if int is only 32-bit, instead of 64-bit
         for (i=30; i>=0; i-=6)  // 6 6-bit words for n
         {
             *cur=((n&mask)>>i)+63;
