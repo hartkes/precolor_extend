@@ -63,7 +63,6 @@ long long int verify
     int *num_colors_previously_used=new int[n];
     int v;  // the current vertex
     int i,j;
-    int cur_color;  // the current color of v, ie cur_color=c[v], but we use this as a local variable
     int good_color_found;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
@@ -194,8 +193,7 @@ long long int verify
         
         // We check if c[v] is valid, and if not, increment it.
         good_color_found=0;  // at the moment, we don't know that c[v] is valid.
-        cur_color=c[v];  // we'll use a local variable instead of accessing the array
-        while (cur_color<max_num_colors && cur_color<=num_colors_previously_used[v])
+        while (c[v]<max_num_colors && c[v]<=num_colors_previously_used[v])
                 // we allow equality in the second test, since we'll allow c[v] to be a new color, ie num_colors_previously_used[v]
         {
             // When this loop is entered, no color_mask should have a color set for v.
@@ -209,16 +207,15 @@ long long int verify
             printf("\n");
             printf("and = %llu  test=%d\n",color_mask[c[v]] & nbrhd_mask[v],(color_mask[c[v]] & nbrhd_mask[v]) == 0);
             */
-            if ((color_mask[cur_color] & nbrhd_mask[v]) == 0)  // no previous neighbors of v are colored with cur_color, so cur_color is a valid color for v
+            if ((color_mask[c[v]] & nbrhd_mask[v]) == 0)  // no previous neighbors of v are colored with c[v], so c[v] is a valid color for v
                     // note that bitwise & has lower precedence than equality testing ==
             {
-                color_mask[cur_color]|=cur_mask;  // set v's bit for the new color
-                c[v]=cur_color;
+                color_mask[c[v]]|=cur_mask;  // set v's bit for the new color
                 good_color_found=1;  // so we've found a good color c[v] for v
                 break;
             }
             else
-                cur_color++;
+                c[v]++;
         }
         
         /*
