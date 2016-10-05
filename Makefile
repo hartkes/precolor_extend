@@ -1,5 +1,7 @@
 
 name=precolor_extend
+CXX=g++
+CXX=clang++
 
 $(name): $(name).cpp graph.h
-	g++ -O5 -o $(name) $(name).cpp
+	$(CXX) -O5 -o $(name) $(name).cpp
