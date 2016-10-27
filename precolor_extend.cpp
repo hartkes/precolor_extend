@@ -125,8 +125,8 @@ long long int verify
         mask_bit_set_splitlevel=0;
     else
         mask_bit_set_splitlevel=(1<<splitlevel);
-    printf("mask_bit_set_splitlevel=%0x, splitlevel=%d\n",mask_bit_set_splitlevel,splitlevel);
-    printf("mask_first_n_bits=%0x\n",mask_first_n_bits);
+    //printf("mask_bit_set_splitlevel=%0x, splitlevel=%d\n",mask_bit_set_splitlevel,splitlevel);
+    //printf("mask_first_n_bits=%0x\n",mask_first_n_bits);
     
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
