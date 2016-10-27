@@ -520,6 +520,14 @@ int main(int argc, char *argv[])
             exit(9);
         }
         
+        if (num_verts_to_precolor<1)
+        {
+            // We always need to have at least one vertex precolored.  This is vertex 0, which is always colored 0 and doesn't change.
+            // Seting num_verts_to_precolor to 1 essentially is just verifying that the graph can be colored with max_num_colors colors.
+            printf("Setting num_verts_to_precolor to 1.\n");
+            num_verts_to_precolor=1;
+        }
+        
         vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(G);
             // compute the orbits before estimating the splitlevel, if necessary
         
