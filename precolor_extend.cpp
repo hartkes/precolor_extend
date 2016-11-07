@@ -50,6 +50,59 @@ void print_binary(BIT_MASK x, int num_bits)
     }
 }
 
+void print_long(long long int x, int width)
+{
+    char suffix[]=" tmbtqqssond";
+        // the first letter of thousands, million, billion, trillion, etc
+    char buffer[width];
+    int pos;  // position in the buffer
+    int last_digit;
+    int digit_count;
+    int negative;  // flag to indicate if x is negative
+    
+    for (pos=0; pos<width; pos++)
+        buffer[pos]=' ';  // put spaces in
+    
+    if (x==0)
+        buffer[width-1]='0';
+    else
+    {
+        negative=0;  // flag
+        if (x<0)
+        {
+            negative=1;
+            x=-x;
+        }
+        
+        digit_count=0;
+        pos=width-1;
+        while ((x>0) && (pos>=0))  // digits still remaining and we haven't filled the buffer
+        {
+            last_digit=x%10;
+            x/=10;
+            
+            digit_count++;
+            if ( ((digit_count%3)==1) && (digit_count>1) )
+            {
+                buffer[pos]=suffix[digit_count/3];
+                pos--;
+                if (pos<0)
+                    break;
+            }
+            buffer[pos]='0'+last_digit;
+            pos--;
+        }
+        
+        if ( (negative) && (pos>=0) )
+            buffer[pos]='-';
+    }
+    
+    //for (pos=0; pos<width; pos++)
+    //    printf("%c",buffer[pos]);
+    
+    printf("%.*s",width,buffer);  // how to print a fixed-length char array (a string should be null terminated)
+}
+
 
 long long int verify
           (int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
@@ -289,7 +342,9 @@ long long int verify
                 //if (count_precolorings%1000000==0)  // change this to an & statement
                 if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
                 {
-                    printf("count_precolorings=%14lld",count_precolorings);
+                    //printf("count_precolorings=%14lld",count_precolorings);
+                    printf("count_precolorings=");
+                    print_long(count_precolorings,20);
                     printf("  c=");
                     for (i=0; i<num_verts_to_precolor; i++)
                         printf("%d:%d ",i,c[i]);
@@ -553,8 +608,11 @@ int main(int argc, char *argv[])
                                       &count_all_precolorings
                                      );
         
-        printf("Number of all precolorings: %lld\n",count_all_precolorings);
-        printf("Number of bad precolorings: %lld\n",count_bad_precolorings);
+        //printf("Number of all precolorings: %lld\n",count_all_precolorings);
+        printf("# all precolorings:");
+        print_long(count_all_precolorings,20);
+        printf("\n");
+        printf("# bad precolorings: %lld\n",count_bad_precolorings);
         
         end=clock();
         printf("CPU time used: %.3f seconds\n",((double)(end-start))/CLOCKS_PER_SEC);
