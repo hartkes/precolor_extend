@@ -153,13 +153,22 @@ long long int verify
             nbrhd_mask[v]<<=1;
             nbrhd_mask[v]|=(BIT_MASK)G->get_adj_sorted(i,v);  // set the low bit if i and v are adjacent
         }
+        /*
+        printf("nbrhd_mask[%2d]=",v);
+        print_binary(nbrhd_mask[v],sizeof(nbrhd_mask)*8);
+        printf("\n");
+        //*/
     }
     //printf("Done initializing neighborhood bit masks.\n");
     for (i=0; i<max_num_colors; i++)
         color_mask[i]=0;
-    mask_extended_vertices=(1<<(num_verts_to_precolor-1))-1;  // also clear bit num_verts_to_precolor-1
-    //printf("Done initializing color bit masks.\n");
-    
+    mask_extended_vertices=(((BIT_MASK)1)<<(num_verts_to_precolor-1))-1;  // also clear bit num_verts_to_precolor-1
+    /*
+    printf("mask_extended_vertices=");
+    print_binary(mask_extended_vertices,sizeof(mask_extended_vertices)*8);
+    printf("\n");
+    printf("Done initializing color bit masks.\n");
+    //*/
     
     // initialization
     c[0]=0;  // we can assume that vertex 0 is colored 0
@@ -174,10 +183,16 @@ long long int verify
     num_colors_previously_used[v]=1;
     
     mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
+    /*
+    printf("mask_first_n_bits=",mask_first_n_bits);
+    print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8);
+    printf("\n");
+    //*/
+    
     if (splitlevel==n)  // a splitlevel of n indicates no parallelization
         mask_bit_set_splitlevel=0;
     else
-        mask_bit_set_splitlevel=(1<<splitlevel);
+        mask_bit_set_splitlevel=((BIT_MASK)1)<<splitlevel;
     //printf("mask_bit_set_splitlevel=%0x, splitlevel=%d\n",mask_bit_set_splitlevel,splitlevel);
     //printf("mask_first_n_bits=%0x\n",mask_first_n_bits);
     
@@ -220,6 +235,7 @@ long long int verify
                                         : num_colors_previously_used[v-1]   );
     }
     
+    //printf("Starting main loop.\n");
     
     while (v>0)  // main loop
     {
@@ -229,7 +245,7 @@ long long int verify
         // Note that we will never change the color of vertex 0, which is always colored with color 0.
         
         /*
-        if (v>=34) //(1 || v<=14)
+        if (1)  //(v>=34) //(1 || v<=14)
         {
             printf(" v=%d  c=",v);
             for (i=0; i<=v; i++)
@@ -238,7 +254,7 @@ long long int verify
             for (i=0; i<max_num_colors; i++)
             {
                 printf("color_mask[%2d]=",i);
-                print_binary(color_mask[i],32);
+                print_binary(color_mask[i],sizeof(color_mask[i])*8);
                 printf("\n");
             }
         }
@@ -276,7 +292,7 @@ long long int verify
         BIT_MASK test_mask;
         for (i=0; i<=v; i++)
         {
-            test_mask=1<<i;
+            test_mask=((BIT_MASK)1)<<i;
             for (j=0; j<max_num_colors && j<=num_colors_previously_used[i]; j++)
                 if (((color_mask[j]&test_mask)!=0) != (j==c[i]))
                 {
@@ -353,7 +369,7 @@ long long int verify
                 
                 // we need to backtrack and advance to the next precoloring
                 v=num_verts_to_precolor-1;
-                cur_mask=1<<v;
+                cur_mask=((BIT_MASK)1)<<v;
                 c[v]++;
                 
                 // we need to clear the color_masks for the vertices from v to n
