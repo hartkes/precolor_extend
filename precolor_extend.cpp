@@ -37,8 +37,11 @@
 #include "graph.h"
 
 
-typedef unsigned long long int BIT_MASK;  // we want a 64-bit unsigned integer for bit masks
-
+#ifdef USE128BITS
+    typedef unsigned __int128 BIT_MASK;  // 128-bits, should work with both gcc and Clang
+#else
+    typedef unsigned long long int BIT_MASK;  // we want a 64-bit unsigned integer for bit masks
+#endif
 
 void print_binary(BIT_MASK x, int num_bits)
 {
@@ -521,6 +524,9 @@ int main(int argc, char *argv[])
     
     clock_t start,end;  // for reporting CPU runtime
     
+    
+    // print info
+    printf("precolor_extend compiled using %lu bit masks.\n",sizeof(BIT_MASK)*8);
     
     // defaults
     splitlevel_arg=-1;
