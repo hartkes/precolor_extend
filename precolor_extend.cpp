@@ -418,11 +418,11 @@ long long int verify
     }
     //printf("final count_precolorings=%lld\n",count_precolorings);
     
-    delete nbrhd_mask;
-    delete color_mask;
+    delete[] nbrhd_mask;
+    delete[] color_mask;
     
-    delete c;
-    delete num_colors_previously_used;
+    delete[] c;
+    delete[] num_colors_previously_used;
     
     *count_precolorings_to_return=count_precolorings;
     return num_precolorings_that_dont_extend;
@@ -457,7 +457,7 @@ BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
     }
     printf("\n");
     
-    delete closed_nbrhd_mask;
+    delete[] closed_nbrhd_mask;
     
     return vertices_in_orbit_with_previous;
 }
