@@ -352,7 +352,7 @@ long long int verify
                                               ? num_colors_previously_used[v-1]+1
                                               : num_colors_previously_used[v-1]   );
             }
-            else
+            else  // v>=n, so we have colored all of the vertices
             {
                 // we have colored (properly) all of the vertices, and so have a good coloring
                 
@@ -390,22 +390,21 @@ long long int verify
             {
                 if (v==num_verts_to_precolor-1)
                 {
-                    // We have backtracked to a precoloring without finding an extension that is a proper coloring
-                    // So we print this precoloring to report the failure.
+                    // We have backtracked to a precoloring without finding an extension that is a proper coloring.
+                    count_precolorings++;
                     num_precolorings_that_dont_extend++;
-                    if (num_precolorings_that_dont_extend<100)  // no point in printing more than 100 bad precolorings
-                    {
-                        printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
-                        for (i=0; i<=v; i++)  // only print the vertices that are precolored
-                            printf("%d:%d ",i,c[i]);
-                        printf("\n");
-                    }
-                    else
+                    
+                    // So we print this bad precoloring to report the failure.
+                    printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
+                    for (i=0; i<=v; i++)  // only print the vertices that are precolored
+                        printf("%d:%d ",i,c[i]);
+                    printf("\n");
+                    
+                    if (num_precolorings_that_dont_extend>=100)  // no point in finding more than 100 bad precolorings
                     {
                         printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
                         break;
                     }
-                    count_precolorings++;
                 }
                 
                 // in any case, increment the color of v
