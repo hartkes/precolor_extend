@@ -237,7 +237,7 @@ void UndirectedGraph::write_graph6_string(char *g6, int length)
     // The string is then zero terminated.
 {
     char *cur;  // the current character in the string that we're considering
-    int val,mask;
+    long int val,mask;  // we assume that long int is at least 64 bits
     int i,j;
     
     if (9+(n+5)/6>length)
@@ -273,7 +273,7 @@ void UndirectedGraph::write_graph6_string(char *g6, int length)
         *cur=126;
         cur++;
         
-        mask=63<<30;  // this line is problematical if int is only 32-bit, instead of 64-bit
+        mask=((long int)63)<<30;
         for (i=30; i>=0; i-=6)  // 6 6-bit words for n
         {
             *cur=((n&mask)>>i)+63;
