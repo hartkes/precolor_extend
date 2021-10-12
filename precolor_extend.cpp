@@ -318,7 +318,6 @@ long long int verify
                     c[v]=max_num_colors;
             else
                 if (cur_mask & mask_first_n_bits)  // same as (v<n)
-                    //TODO: Maybe combine with mask_skip_max_color_to_try??
                     // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
                     // We reset its color.
                 {
@@ -327,6 +326,7 @@ long long int verify
                         max_color_to_try[v]=max_num_colors;  // or could be max_color_to_try[v-1], maybe can combine statement
                         mask_skip_max_color_to_try=( ~(( ((BIT_MASK)1)<<(v+1) )-1) ) & mask_first_n_bits;
                             // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
+                            // Note that we also AND with mask_first_n_bits so that we can easily test the conditions "beyond max_color_to_try" and "v<n" simultaneously.
                         
                         /*
                         printf("v=%2d  mask_skip_max_color_to_try=",v);
