@@ -145,6 +145,7 @@ long long int verify
     BIT_MASK cur_mask;  // a single bit set in the position corresponding to the current vertex, v
     BIT_MASK mask_extended_vertices;  // a mask to clear the colors on vertices beyond the precolored vertices
     BIT_MASK mask_first_n_bits;  // mask with first n positions set; used to test with cur_mask when v<n
+    BIT_MASK mask_skip_max_color_to_try;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
     BIT_MASK mask_bit_set_splitlevel;  // mask with one bit set in position splitlevel
     
     
@@ -206,7 +207,7 @@ long long int verify
     
     //printf("Starting main loop.\n");
     
-    while (v>0)  // main loop
+    while (1)  // main loop, runs when v>0, but the exit condition while be checked only when backtracking
     {
         // When we start the loop, we are attempting to color v with c[v], and we need to check if c[v] is valid.
         // If c[v] is valid, then we move to the next vertex.
@@ -280,10 +281,11 @@ long long int verify
         if (good_color_found)
         {
             
-            // This code allows for parallelization.
+            // This code enables parallelization.
             if (cur_mask & mask_bit_set_splitlevel)  // same as (v==splitlevel), but more efficient
                 // we need to check whether we should go further (deepen the search tree) or not
             {
+                //TODO: set odometer to res initially.  Then subtract 1.  When 0, reset odometer to mod and expand branch.  Then only one branch test, and it's a test of whether odometer is not 0.
                 odometer--;
                 if (odometer<0)
                     odometer=mod-1;  // reset the odometer
@@ -308,11 +310,11 @@ long long int verify
             cur_mask<<=1;
             
             if (cur_mask & mask_first_n_bits)  // same as (v<n)
+                //TODO: Maybe combine with mask_skip_max_color_to_try??
                 // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
                 // We reset its color.
             {
-                if (0)  // if v is large enough [to be figured out], then we won't bother with the max_color_to_try
-                    //TODO: Fix this threshold.  Change to a bit mask calculation.
+                if (cur_mask & mask_skip_max_color_to_try)  // if we have already colored a vertex with max_num_colors, then we won't bother with the max_color_to_try
                     if ((cur_mask & vertices_in_orbit_with_previous)!=0)
                         // vertex v is in orbit with the previous vertex, and so should have a color less than v-1
                         c[v]=c[v-1]-1;
@@ -321,12 +323,33 @@ long long int verify
                 else
                 {
                     if (max_color_to_try[v-1]==max_num_colors)
+                    {
                         max_color_to_try[v]=max_num_colors;  // or could be max_color_to_try[v-1], maybe can combine statement
+                        mask_skip_max_color_to_try=( ~(( ((BIT_MASK)1)<<(v+1) )-1) ) & mask_first_n_bits;
+                            // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
+                        
+                        /*
+                        printf("v=%2d  mask_skip_max_color_to_try=",v);
+                        print_binary(mask_skip_max_color_to_try,n);
+                        printf("\n");
+                        printf("                        cur_mask=");
+                        print_binary(cur_mask,n);
+                        printf("\n");
+                        printf(" v=%d  c=",v);
+                        for (i=0; i<=v; i++)
+                            printf("%d:%d ",i,c[i]);
+                        printf("\n");
+                        //*/
+                    }
                     else  // max_color_to_try[v-1]<max_num_colors
+                    {
                         if (c[v-1]==max_color_to_try[v-1])
                             max_color_to_try[v]=max_color_to_try[v-1]+1;
                         else
                             max_color_to_try[v]=max_color_to_try[v-1];
+                        
+                        mask_skip_max_color_to_try=0;
+                    }
                     
                     if ((cur_mask & vertices_in_orbit_with_previous)!=0)
                         // vertex v is in orbit with the previous vertex, and so should have a color less than v-1, unless v-1 had used a new color
@@ -377,35 +400,34 @@ long long int verify
             // note that color_mask[c[v]] is not set (and c[v] is not valid)
             v--;
             cur_mask>>=1;
-            if (v>0)  // c[0] should never be incremented
+            if (v==0)  // we have backtracked to the first vertex and thus are finished.  Note we do not change the color on vertex 0.
+                break;
+            if (v==num_verts_to_precolor-1)
             {
-                if (v==num_verts_to_precolor-1)
-                {
-                    // We have backtracked to a precoloring without finding an extension that is a proper coloring.
-                    count_precolorings++;
-                    num_precolorings_that_dont_extend++;
-                    
-                    // So we print this bad precoloring to report the failure.
-                    printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
-                    for (i=0; i<=v; i++)  // only print the vertices that are precolored
-                        printf("%d:%d ",i,c[i]);
-                    printf("\n");
-                    
-                    if (num_precolorings_that_dont_extend>=100)  // no point in finding more than 100 bad precolorings
-                    {
-                        printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
-                        break;
-                    }
-                }
+                // We have backtracked to a precoloring without finding an extension that is a proper coloring.
+                count_precolorings++;
+                num_precolorings_that_dont_extend++;
                 
-                // in any case, decrement the color of v
-                color_mask[c[v]]&=~cur_mask;  // clear v's bit for this color
-                c[v]--;
+                // So we print this bad precoloring to report the failure.
+                printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
+                for (i=0; i<=v; i++)  // only print the vertices that are precolored
+                    printf("%d:%d ",i,c[i]);
+                printf("\n");
+                
+                if (num_precolorings_that_dont_extend>=100)  // no point in finding more than 100 bad precolorings
+                {
+                    printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
+                    break;
+                }
             }
-            //else
-            //    break;  // no more precolorings to check; but this will be handled by the condition in the while loop
-        }
-    }
+            
+            // in any case, decrement the color of v
+            color_mask[c[v]]&=~cur_mask;  // clear v's bit for this color
+            c[v]--;
+        }  // end of backtrack
+    
+    }  // end of main while loop
+    
     //printf("final count_precolorings=%lld\n",count_precolorings);
     
     delete[] nbrhd_mask;
