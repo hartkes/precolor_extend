@@ -309,18 +309,18 @@ long long int verify
             v++;  // we found a good color for v, so we advance to the next vertex so we can try to color it.
             cur_mask<<=1;
             
-            if (cur_mask & mask_first_n_bits)  // same as (v<n)
-                //TODO: Maybe combine with mask_skip_max_color_to_try??
-                // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
-                // We reset its color.
-            {
-                if (cur_mask & mask_skip_max_color_to_try)  // if we have already colored a vertex with max_num_colors, then we won't bother with the max_color_to_try
-                    if ((cur_mask & vertices_in_orbit_with_previous)!=0)
-                        // vertex v is in orbit with the previous vertex, and so should have a color less than v-1
-                        c[v]=c[v-1]-1;
-                    else
-                        c[v]=max_num_colors;
+            if (cur_mask & mask_skip_max_color_to_try)  // if we have already colored a vertex with max_num_colors, then we won't bother with the max_color_to_try
+                // Note that this implies that v<n because of the AND with mask_first_n_bits.
+                if ((cur_mask & vertices_in_orbit_with_previous)!=0)
+                    // vertex v is in orbit with the previous vertex, and so should have a color less than v-1
+                    c[v]=c[v-1]-1;
                 else
+                    c[v]=max_num_colors;
+            else
+                if (cur_mask & mask_first_n_bits)  // same as (v<n)
+                    //TODO: Maybe combine with mask_skip_max_color_to_try??
+                    // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
+                    // We reset its color.
                 {
                     if (max_color_to_try[v-1]==max_num_colors)
                     {
@@ -361,39 +361,39 @@ long long int verify
                             c[v]=c[v-1]-1;
                     else
                         c[v]=max_color_to_try[v];
+                    
+                    //color_mask[c[v]]|=cur_mask;  // set v's bit for the new color --- this is not needed
                 }
                 
-                //color_mask[c[v]]|=cur_mask;  // set v's bit for the new color --- this is not needed
-            }
-            else  // v>=n, so we have colored all of the vertices
-            {
-                // we have colored (properly) all of the vertices, and so have a good coloring
-                
-                //printf("We have a good coloring!\n");
-                count_precolorings++;
-                //if (count_precolorings%1000000==0)  // change this to an & statement
-                if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
-                //if (1)
+                else  // v>=n, so we have colored all of the vertices
                 {
-                    //printf("count_precolorings=%14lld",count_precolorings);
-                    printf("count_precolorings=");
-                    print_long(count_precolorings,20);
-                    printf("  c=");
-                    for (i=0; i<num_verts_to_precolor; i++)
-                        printf("%d:%d ",i,c[i]-1);  // TODO: Note the -1 to match old output!
-                    printf("\n");
+                    // we have colored (properly) all of the vertices, and so have a good coloring
+                    
+                    //printf("We have a good coloring!\n");
+                    count_precolorings++;
+                    //if (count_precolorings%1000000==0)  // change this to an & statement
+                    if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
+                    //if (1)
+                    {
+                        //printf("count_precolorings=%14lld",count_precolorings);
+                        printf("count_precolorings=");
+                        print_long(count_precolorings,20);
+                        printf("  c=");
+                        for (i=0; i<num_verts_to_precolor; i++)
+                            printf("%d:%d ",i,c[i]-1);  // TODO: Note the -1 to match old output!
+                        printf("\n");
+                    }
+                    
+                    // we need to backtrack and advance to the next precoloring
+                    v=num_verts_to_precolor-1;
+                    cur_mask=((BIT_MASK)1)<<v;
+                    c[v]--;  // decrement color
+                    
+                    // we need to clear the color_masks for the vertices from v to n
+                    for (i=max_num_colors; i>0; i--)
+                        color_mask[i]&=mask_extended_vertices;  // this also clears v's color
+                    
                 }
-                
-                // we need to backtrack and advance to the next precoloring
-                v=num_verts_to_precolor-1;
-                cur_mask=((BIT_MASK)1)<<v;
-                c[v]--;  // decrement color
-                
-                // we need to clear the color_masks for the vertices from v to n
-                for (i=max_num_colors; i>0; i--)
-                    color_mask[i]&=mask_extended_vertices;  // this also clears v's color
-                
-            }
         }
         else // we've gone too far in the colors (no color is available for v) and so need to backtrack
         {
