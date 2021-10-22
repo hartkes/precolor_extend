@@ -441,7 +441,7 @@ long long int verify
 }
 
 
-BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
+BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G,int print_results)
 {
     int n=G->n;  // the total number of vertices in the graph
     int v;  // the current vertex
@@ -450,7 +450,8 @@ BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
     BIT_MASK *closed_nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the closed neighborhood of each vertex
     BIT_MASK vertices_in_orbit_with_previous=0;
     
-    printf("Vertices in orbit with the previous vertex in the order: ");
+    if (print_results)
+        printf("Vertices in orbit with the previous vertex in the order: ");
     // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
     for (v=0; v<n; v++)
     {
@@ -463,11 +464,13 @@ BIT_MASK compute_vertices_in_orbit_with_previous(UndirectedGraph* G)
         
         if ((v>0) && (closed_nbrhd_mask[v]==closed_nbrhd_mask[v-1]))
         {
-            printf("%d,",v);
+            if (print_results)
+                printf("%d,",v);
             vertices_in_orbit_with_previous|=(((BIT_MASK)1)<<v);
         }
     }
-    printf("\n");
+    if (print_results)
+        printf("\n");
     
     delete[] closed_nbrhd_mask;
     
@@ -487,12 +490,13 @@ int splitlevel_heuristic
     
     printf("Estimating the splitlevel to obtain roughly equal modulo classes.\n");
     
-    for (level=1; level<num_verts_to_precolor-1; level++)
+    for (level=2; level<num_verts_to_precolor-1; level++)
         // if there are not enough nodes in the search tree, we set the level to be the last precolored vertex, ie, num_verts_to_precolor-1
+        // We start with level=2, since verify only works correctly if G has at least 2 vertices.
     {
         //printf("Testing splitlevel=%d\n",level);
         H=new UndirectedGraph(G,level);
-        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(H);
+        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(H,0);  // do not print results
         count_all_precolorings=0;
         verify(max_num_colors,
                H->n,  // all of the vertices of H are to be precolored
@@ -617,7 +621,7 @@ int main(int argc, char *argv[])
             num_verts_to_precolor=1;
         }
         
-        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(G);
+        vertices_in_orbit_with_previous=compute_vertices_in_orbit_with_previous(G,1);
             // compute the orbits before estimating the splitlevel, if necessary
         
         if (mod==-1)  // not using parallelization
@@ -625,7 +629,7 @@ int main(int argc, char *argv[])
             splitlevel=G->n;  // will never reach this level
             printf("not parallelizing\n");
         }
-        else 
+        else
         {
             if (splitlevel_arg!=-1)
                 splitlevel=splitlevel_arg;
