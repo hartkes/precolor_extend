@@ -207,7 +207,7 @@ long long int verify
     
     //printf("Starting main loop.\n");
     
-    while (1)  // main loop, runs when v>0, but the exit condition while be checked only when backtracking
+    while (1)  // main loop, runs when v>0, but the exit condition will be checked only when backtracking
     {
         // When we start the loop, we are attempting to color v with c[v], and we need to check if c[v] is valid.
         // If c[v] is valid, then we move to the next vertex.
