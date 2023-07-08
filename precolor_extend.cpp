@@ -607,7 +607,7 @@ int main(int argc, char *argv[])
         printf("Input read: max_num_colors=%d num_verts_to_precolor=%d n=%d\n",max_num_colors,num_verts_to_precolor,G->n);
         printf(">>graph6<<%s",cur);  // newline still present in line_in
         
-        if (G->n > 8*sizeof(BIT_MASK))
+        if (G->n > 8*sizeof(BIT_MASK))  //FIXME: need to subtract 1 since we 1-index.
         {
             printf("The number n=%d of vertices in the graph is more than the number %d of bits in a word.",G->n,(int)(8*sizeof(BIT_MASK)));
             exit(9);
