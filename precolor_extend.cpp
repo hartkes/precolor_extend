@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>  // to use getopt to parse the command line
+#include <climits>  // for INT_MAX
 #include <time.h>  // for reporting runtime
 #include "graph.h"
 
@@ -111,6 +112,7 @@ long long int verify
           (int max_num_colors, int num_verts_to_precolor, UndirectedGraph* G,
            int res, int mod, int splitlevel,
            BIT_MASK vertices_in_orbit_with_previous,
+           int limit_number_of_bad_precolorings,  // limit on number of bad precolorings
            long long int *count_precolorings_to_return  // to be returned out
           )
 {
@@ -414,7 +416,8 @@ long long int verify
                     printf("%d:%d ",i,c[i]);
                 printf("\n");
                 
-                if (num_precolorings_that_dont_extend>=100)  // no point in finding more than 100 bad precolorings
+                if (num_precolorings_that_dont_extend>=limit_number_of_bad_precolorings)
+                    // no point in finding too many bad precolorings
                 {
                     printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
                     break;
@@ -503,6 +506,7 @@ int splitlevel_heuristic
                H,
                0,1,H->n,
                vertices_in_orbit_with_previous,
+               0,  // do not limit bad precolorings, though we won't find them here
                &count_all_precolorings
               );
         delete H;
@@ -530,6 +534,8 @@ int main(int argc, char *argv[])
     int res,mod,splitlevel_arg,splitlevel;  // for parallelizing
     int opt;  // for parsing the command line
     
+    int limit_number_of_bad_precolorings=100;  // how many bad precolorings to see before bombing out
+    
     UndirectedGraph *G;
     G=new UndirectedGraph();
     
@@ -550,7 +556,7 @@ int main(int argc, char *argv[])
     mod=-1;
     
     // parse the command line
-    while ((opt=getopt(argc,argv,"r:m:s:"))!=-1)  // the colons indicate the options take required arguments
+    while ((opt=getopt(argc,argv,"r:m:s:b:"))!=-1)  // the colons indicate the options take required arguments
     {
         switch (opt)
         {
@@ -563,9 +569,14 @@ int main(int argc, char *argv[])
             case 's':
                 sscanf(optarg,"%d",&splitlevel_arg);
                 break;
+            case 'b':
+                sscanf(optarg,"%d",&limit_number_of_bad_precolorings);
+                if (limit_number_of_bad_precolorings==-1)  // no limit
+                    limit_number_of_bad_precolorings=INT_MAX;  // largest integer
+                break;
             case '?':
                 printf("Error parsing command line arguments; problem with option %c\n",optopt);
-                printf("USAGE: precolor_extend -r residue -m modulus [-s splitlevel]\n");
+                printf("USAGE: precolor_extend -r residue -m modulus [-s splitlevel] [-b # bad precolorings]\n");
                 printf("-r and -m must be used together; -s can only be used if -r/-m also are.\n");
                 exit(8);
             default:
@@ -573,6 +584,7 @@ int main(int argc, char *argv[])
         }
     }
     printf("Parallelization parameters set: res=%d mod=%d splitlevel_arg=%d\n",res,mod,splitlevel_arg);
+    printf("Bombing out when %d precolorings that do not extend are encountered.\n",limit_number_of_bad_precolorings);  // do not say "bad precoloring" so easy to grep for final counts
     
     if ((res==-1) ^ (mod==-1))  // using bitwise xor here since there is no logical xor
     {
@@ -643,6 +655,7 @@ int main(int argc, char *argv[])
         count_bad_precolorings=verify(max_num_colors,num_verts_to_precolor,G,
                                       res,mod,splitlevel,
                                       vertices_in_orbit_with_previous,
+                                      limit_number_of_bad_precolorings,
                                       &count_all_precolorings
                                      );
         
