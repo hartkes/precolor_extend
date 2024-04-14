@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#numjobs=250
+numjobs=100000
+input=$1
+
+configuration=`basename $input .txt | cut -d_ -f2`
+host=`hostname -s`
+
+
+output_dir="output_$configuration""_$host"
+if [ -d "$output_dir" ]
+then
+  # directory already exists, so delete the contents
+  # We don't just delete the directory and make a new one, since then bash shells sitting in that directory then need to change to the new directory.
+  echo "Output directory already exists, deleting existing output files..."
+  cd "$output_dir"
+  rm -f output*.txt
+  cd ..
+else
+  mkdir "$output_dir"
+fi
+
+echo "Processing $input into $output_dir with $numjobs jobs on machine $host"
+date -Iseconds
+start=`date +%s`
+
+############################ This is the main command #####################################
+seq -w 0 $((numjobs-1)) | parallel --gnu --progress "cat $input "'|'" stdbuf -o0 precolor_extend -r {} -m $numjobs "'>'" $output_dir/output_$configuration""_job{}.txt"
+# -v for parallel would print out the commands being run to stdout
+# stdbuf turns off buffering on stdout
+
+date -Iseconds
+finish=`date +%s`
+echo "Total elapsed wall time in seconds is $(($finish-$start))"
