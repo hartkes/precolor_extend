@@ -382,7 +382,7 @@ long long int verify
                         print_long(count_precolorings,20);
                         printf("  c=");
                         for (i=0; i<num_verts_to_precolor; i++)
-                            printf("%d:%d ",i,c[i]-1);  // TODO: Note the -1 to match old output!
+                            printf("%d:%d ",i,c[i]);
                         printf("\n");
                     }
                     
