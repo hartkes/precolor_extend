@@ -196,7 +196,7 @@ long long int verify
     
     mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
     /*
-    printf("1 mask_first_n_bits=",mask_first_n_bits);
+    printf("mask_first_n_bits=",mask_first_n_bits);
     print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8);
     printf("\n");
     //*/
@@ -225,13 +225,12 @@ long long int verify
         
         
         /* Displaying v and c[] at the beginning of the main loop.
-        //if (count_precolorings>=108739712) //(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
-        if (!reuse_extension)
+        //if (1)//(v==n-1)  //(v>=34) //(1 || v<=14)
         {
             printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
             for (i=0; i<=v; i++)
-                printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
-                //printf("%d:%d ",i,c[i]);
+                //printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
+                printf("%d:%d ",i,c[i]);
             printf("\n");
             if (0)
                 for (i=1; i<=max_num_colors; i++)
@@ -241,24 +240,6 @@ long long int verify
                     printf("\n");
                 }
         }
-        //*/
-        
-        /* Debugging code to ensure that color_mask is consistent with c[v].
-        if (!reuse_extension)
-            for (j=0; j<v; j++)
-            {
-                BIT_MASK mask_single_bit_j=((BIT_MASK)1)<<j;
-                for (i=max_num_colors; i>0; i--)
-                    if (
-                        ((color_mask[i]&mask_single_bit_j)>>j)  // this is 1 if and only if color_mask[i] has the j-th bit set
-                        ^  // xor to see if there's a discrepancy between these two conditions
-                        (c[j]==i)  // vertex j is assigned color i
-                       )
-                    {
-                        printf("color_mask discrepancy! vertex=%d c[j]=%d v=%d color=%d color_mask_bit=%d\n",j,c[j],v,i,(color_mask[i]&mask_single_bit_j)>>j);
-                        exit(5);
-                    }
-            }
         //*/
         
         // We check if c[v] is valid, and if not, increment it.
@@ -358,8 +339,6 @@ long long int verify
                     continue;  // we need to search for a good color for v, so go back the beginning of the main loop
                 }
                 //else  // we could put this is a successful color extension, but we will instead let this fall through to the code below.
-                //else
-                //    printf("Reused extension, was a good coloring!  v=%d\n",n);
             }
             
             if (cur_mask & mask_skip_max_color_to_try)  // if we have already colored a vertex with max_num_colors, then we won't bother with the max_color_to_try
@@ -374,14 +353,6 @@ long long int verify
                     // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
                     // We reset its color.
                 {
-                    /*
-                    if (!reuse_extension)
-                    {
-                        printf("we are not skipping max color to try; max_color_to_try[v-1]=%d\n",max_color_to_try[v-1]);
-                        
-                    }
-                    */
-                    
                     if (max_color_to_try[v-1]==max_num_colors)
                     {
                         max_color_to_try[v]=max_num_colors;  // or could be max_color_to_try[v-1], maybe can combine statement
@@ -431,8 +402,6 @@ long long int verify
                     // we have colored (properly) all of the vertices, and so have a good coloring
                     
                     //printf("We have a good coloring! v=%d\n",v);
-                    //printf("           cur_mask="); print_binary(cur_mask,sizeof(cur_mask)*8); printf("\n");
-                    //printf("3 mask_first_n_bits="); print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8); printf("\n");
                     count_precolorings++;
                     //if (count_precolorings%1000000==0)  // change this to an & statement
                     if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
@@ -480,9 +449,6 @@ long long int verify
                     // try again without reusing the previous color extension
                     reuse_extension=0;
                     // We do *not* advance v (and do not increment the c[v]), so that the auxiliary variables (such as max_num_colors) are correctly set.
-                    //v++;  // we found a good color for v, so we advance to the next vertex so we can try to color it.
-                    //cur_mask<<=1;
-                    //c[v]=max_num_colors;  // reset color to the maximum
                     
                     /*
                     printf("count_precolorings=");
@@ -492,11 +458,8 @@ long long int verify
                         printf("%d:%d ",i,c[i]);
                     printf("\n");
                     */
-                        
-                    // we need to clear the color_masks for the vertices from v to n
-                    //NOTE: I don't think that any clearing should be necessary here.  It should have been handled when backtracking to this point.
-                    //for (i=max_num_colors; i>0; i--)
-                    //    color_mask[i]&=mask_extended_vertices;  // this also clears v's color BUT we do NOT want to clear the color on vertex num_verts_to_precolor-1
+                    
+                    //NOTE: We don't need to clear color_mask, since it should have been handled when backtracking to this point.
                     
                     continue;  // go to beginning of the main loop
                 }
