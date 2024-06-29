@@ -196,7 +196,7 @@ long long int verify
     
     mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
     /*
-    printf("mask_first_n_bits=",mask_first_n_bits);
+    printf("1 mask_first_n_bits=",mask_first_n_bits);
     print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8);
     printf("\n");
     //*/
@@ -224,13 +224,14 @@ long long int verify
         // Note that we will never change the color of vertex 0, which is always colored with color 1.
         
         
-        /*
-        if (1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+        /* Displaying v and c[] at the beginning of the main loop.
+        //if (count_precolorings>=108739712) //(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+        if (!reuse_extension)
         {
-            printf(" v=%d  c=",v);
+            printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
             for (i=0; i<=v; i++)
-                //printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
-                printf("%d:%d ",i,c[i]);
+                printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
+                //printf("%d:%d ",i,c[i]);
             printf("\n");
             if (0)
                 for (i=1; i<=max_num_colors; i++)
@@ -240,6 +241,24 @@ long long int verify
                     printf("\n");
                 }
         }
+        //*/
+        
+        /* Debugging code to ensure that color_mask is consistent with c[v].
+        if (!reuse_extension)
+            for (j=0; j<v; j++)
+            {
+                BIT_MASK mask_single_bit_j=((BIT_MASK)1)<<j;
+                for (i=max_num_colors; i>0; i--)
+                    if (
+                        ((color_mask[i]&mask_single_bit_j)>>j)  // this is 1 if and only if color_mask[i] has the j-th bit set
+                        ^  // xor to see if there's a discrepancy between these two conditions
+                        (c[j]==i)  // vertex j is assigned color i
+                       )
+                    {
+                        printf("color_mask discrepancy! vertex=%d c[j]=%d v=%d color=%d color_mask_bit=%d\n",j,c[j],v,i,(color_mask[i]&mask_single_bit_j)>>j);
+                        exit(5);
+                    }
+            }
         //*/
         
         // We check if c[v] is valid, and if not, increment it.
@@ -269,8 +288,7 @@ long long int verify
                 c[v]--;  // we decrement colors
         }
         
-        /*
-        // sanity test; make sure that c[v] and color_mask are consistent
+        /* sanity test; make sure that c[v] and color_mask are consistent
         BIT_MASK test_mask;
         for (int u=0; u<=v; u++)
         {
@@ -356,6 +374,14 @@ long long int verify
                     // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
                     // We reset its color.
                 {
+                    /*
+                    if (!reuse_extension)
+                    {
+                        printf("we are not skipping max color to try; max_color_to_try[v-1]=%d\n",max_color_to_try[v-1]);
+                        
+                    }
+                    */
+                    
                     if (max_color_to_try[v-1]==max_num_colors)
                     {
                         max_color_to_try[v]=max_num_colors;  // or could be max_color_to_try[v-1], maybe can combine statement
@@ -404,7 +430,9 @@ long long int verify
                 {
                     // we have colored (properly) all of the vertices, and so have a good coloring
                     
-                    //printf("We have a good coloring!\n");
+                    //printf("We have a good coloring! v=%d\n",v);
+                    //printf("           cur_mask="); print_binary(cur_mask,sizeof(cur_mask)*8); printf("\n");
+                    //printf("3 mask_first_n_bits="); print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8); printf("\n");
                     count_precolorings++;
                     //if (count_precolorings%1000000==0)  // change this to an & statement
                     if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
