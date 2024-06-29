@@ -411,7 +411,7 @@ long long int verify
                 num_precolorings_that_dont_extend++;
                 
                 // So we print this bad precoloring to report the failure.
-                printf("Bad precoloring, count=%5d,      c=",num_precolorings_that_dont_extend);
+                printf("Bad precoloring, count=%5d,            c=",num_precolorings_that_dont_extend);
                 for (i=0; i<=v; i++)  // only print the vertices that are precolored
                     printf("%d:%d ",i,c[i]);
                 printf("\n");
