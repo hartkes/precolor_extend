@@ -124,6 +124,7 @@ long long int verify
     int good_color_found;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
+    long long int num_restarts_extension=0;  // number of precolorings where we could not reuse the previous extension, but had to restart the process
     
     int reuse_extension=0;  // flag indicating if we should try to use the previous color extension after a new precoloring is made
     
@@ -225,7 +226,7 @@ long long int verify
         
         
         /* Displaying v and c[] at the beginning of the main loop.
-        //if (1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+        if (1)//(v==n-1)  //(v>=34) //(1 || v<=14)
         {
             printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
             for (i=0; i<=v; i++)
@@ -450,6 +451,8 @@ long long int verify
                     reuse_extension=0;
                     // We do *not* advance v (and do not increment the c[v]), so that the auxiliary variables (such as max_num_colors) are correctly set.
                     
+                    num_restarts_extension++;
+                    
                     /*
                     printf("count_precolorings=");
                     print_long(count_precolorings,20);
@@ -488,7 +491,9 @@ long long int verify
     
     }  // end of main while loop
     
-    //printf("final count_precolorings=%lld\n",count_precolorings);
+    printf("final count_precolorings=%lld  num_restarts_extension=%lld  ratio=%.2f\n",count_precolorings,num_restarts_extension,
+                                                                           ((double)count_precolorings)/((double)num_restarts_extension)
+                                                                           );
     
     delete[] nbrhd_mask;
     delete[] color_mask;
