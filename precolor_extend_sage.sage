@@ -10,7 +10,7 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     c=[None]*n  # color on each vertex
     count_precolorings=0
     v=0  # the current vertex
-
+    
     # The vertices are 0..n-1.
     # The colors are 1..max_num_colors.  We count down.
 
@@ -18,12 +18,12 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     c[0]=1
     c[1]=2
     v=1
-
+    
     while v>0:
-
+        
         #s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
         #print(f"Starting main loop {v=} c={s}")
-
+        
         # We look for a valid color for v, starting with c[v].
         good_color_found=False
         while c[v]>0:  # if c[v]==0, then a good color was not found
@@ -35,19 +35,19 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
                 # no bad neighbors, so c[v] is a valid color
                 good_color_found=True
                 break  # out of while loop
-
+            
             c[v]-=1  # advance to next color
-
+        
         #print(f"Done looking for color, {v=} {good_color_found=} {c[v]=}")
-
+        
         if good_color_found:
             #TODO: remove "good_color_found" and replace with c[v]==0
-
+            
             # parallelization in here
-
+            
             # advance to the next vertex
             v+=1
-
+            
             if v==n:  # all vertices have been colored, we have successfully extended the precoloring
                 count_precolorings+=1
                 v=num_verts_to_precolor-1
@@ -60,22 +60,22 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
                 # TODO: parallelization
                 
                 # go back to beginning of while loop
-
+        
         else:  # no good_color_found, so we backtrack
             v-=1
-
+            
             if v==num_verts_to_precolor-1:
                 # We have backtracked to a precoloring without finding a good extension.
                 # This is a *bad* precoloring.
                 print(f"Bad precoloring! {c=}")
                 return False
-
+            
             if v==0:
                 break  # break of out of while loop, done
-
+            
             c[v]-=1  # advance the color
             # go back to the beginning of while loop
-
+    
     print(f"{count_precolorings=}")
     return True  # no bad precolorings found, all precolorings extend
 
