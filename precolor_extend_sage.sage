@@ -11,6 +11,14 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     count_precolorings=0
     v=0  # the current vertex
     
+    # Compute vertices that have the same closed neighborhood as their predecessor.  These are thus in the same orbit.
+    vertices_in_orbit_with_previous=set()
+    for v in range(1,n):
+        if set(G.neighbors(v,closed=True))==set(G.neighbors(v-1,closed=True)):
+            vertices_in_orbit_with_previous.add(v)
+    print(f"vertices_in_orbit_with_previous={sorted(list(vertices_in_orbit_with_previous))}")
+    
+    
     # The vertices are 0..n-1.
     # The colors are 1..max_num_colors.  We count down.
 
@@ -50,12 +58,26 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
             
             if v==n:  # all vertices have been colored, we have successfully extended the precoloring
                 count_precolorings+=1
+                #s=", ".join([f"{x}:{c[x]}" for x in range(num_verts_to_precolor)])
+                #print(f"Good precoloring, {count_precolorings=:5} c={s}")
+                
                 v=num_verts_to_precolor-1
                 c[v]-=1  # advance the color
                 # go back to beginning of while loop
             else:
-                c[v]=min( max(c[:v])+1, max_num_colors )  # TODO: check that this is what the C++ code does
-                # TODO: vertices that have the same [closed] neighborhood as the previous vertex.
+                if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
+                    if c[v-1]==min( max(c[:v-1])+1, max_num_colors ):  # v-1 used a new color
+                        c[v]=min( c[v-1]+1, max_num_colors )  # v can use a new color, if this doesn't exceed max_num_colors
+                    else:
+                        # We set the color of v to be less than the color of v-1, to break symmetry.
+                        # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
+                        c[v]=c[v-1]-1
+                    
+                else:
+                    c[v]=min( max(c[:v])+1, max_num_colors )
+                        # TODO: check that this is what the C++ code does
+                        # TODO: Is this what max_color_to_try is?
+                    
                 # TODO: re-using extensions
                 # TODO: parallelization
                 
