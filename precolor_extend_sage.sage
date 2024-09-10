@@ -27,6 +27,8 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     c[1]=2
     v=1
     
+    reuse_extension=False  # no extension yet
+    
     while v>0:
         
         #s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
@@ -56,6 +58,22 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
             # advance to the next vertex
             v+=1
             
+            # if we have now colored all precolored vertices, then try to reuse previous extension
+            # Should we do this before advancing v?
+            if (v==num_verts_to_precolor) and reuse_extension:
+                print("We are reusing the extension!")
+                while v<n:
+                    # We check if c[v] is a valid color, ie, the color does not appear on a previous neighbor.
+                    for w in G.neighbors(v):
+                        if w<v and c[w]==c[v]:  # c[v] is *not* a valid color
+                            break
+                    else:
+                        # no bad neighbors, so c[v] is a valid color
+                        v+=1  # keep color c[v] on v
+                        continue  # advance v to next vertex
+                    
+                    break  # out of while loop
+            
             if v==n:  # all vertices have been colored, we have successfully extended the precoloring
                 count_precolorings+=1
                 #s=", ".join([f"{x}:{c[x]}" for x in range(num_verts_to_precolor)])
@@ -63,6 +81,9 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
                 
                 v=num_verts_to_precolor-1
                 c[v]-=1  # advance the color
+                
+                reuse_extension=True  # we can try to reuse this extension for the next precoloring
+                
                 # go back to beginning of while loop
             else:
                 if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
@@ -89,8 +110,31 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
             if v==num_verts_to_precolor-1:
                 # We have backtracked to a precoloring without finding a good extension.
                 # This is a *bad* precoloring.
-                print(f"Bad precoloring! {c=}")
-                return False
+                
+                # unless we had been trying to reuse the previous extension
+                if reuse_extension:
+                    #THOUGHT: If we're counting precolorings, then no need to re-use extensions.
+                    # print("Reusing extension failed, trying to extend from scratch.")
+                    reuse_extension=False
+                    # advance to the next vertex
+                    v+=1
+                    
+                    # Set c[v].  This is code copied from above.  Can we be smarter and reuse that code somehow?
+                    if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
+                        if c[v-1]==min( max(c[:v-1])+1, max_num_colors ):  # v-1 used a new color
+                            c[v]=min( c[v-1]+1, max_num_colors )  # v can use a new color, if this doesn't exceed max_num_colors
+                        else:
+                            # We set the color of v to be less than the color of v-1, to break symmetry.
+                            # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
+                            c[v]=c[v-1]-1
+                        
+                    else:
+                        c[v]=min( max(c[:v])+1, max_num_colors )
+                            
+                            
+                else:  # we have failed to extend even when starting fresh
+                    print(f"Bad precoloring! {c=}")
+                    return False
             
             if v==0:
                 break  # break of out of while loop, done
