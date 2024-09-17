@@ -3,7 +3,9 @@
 # Script to compute precoloring extension for graphs.
 
 
-def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
+def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
+                          res,mod,splitlevel,  # for parallelization
+                          ):
 
     n=G.num_verts()
     #print(f"Running with {max_num_colors=} {num_verts_to_precolor=} {n=} {G.graph6_string()=}")
@@ -29,6 +31,8 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     
     reuse_extension=False  # no extension yet
     
+    odometer=0  # for parallelization
+    
     while v>0:
         
         s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
@@ -53,7 +57,14 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
         if good_color_found:
             #TODO: remove "good_color_found" and replace with c[v]==0
             
-            # parallelization in here
+            # parallelization
+            if v==splitlevel:
+                odometer=(odometer+1) % mod
+                print(f"at splitlevel {v=} {odometer=} {res=}")
+                if odometer!=res:
+                    print(f"continuing!")
+                    c[v]-=1
+                    continue  # do not advance v, continue on main while loop
             
             # advance to the next vertex
             v+=1
@@ -146,7 +157,8 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     return True  # no bad precolorings found, all precolorings extend
 
 
-def read_input(input_filename: str):
+def read_input(input_filename: str,
+               res:int, mod:int, splitlevel:int):
     # Read file input_filename and parse each line for precoloring extension.
 
     with open(input_filename,'rt') as f:
@@ -158,7 +170,7 @@ def read_input(input_filename: str):
                 max_num_colors=int(data[0])
                 num_verts_to_precolor=int(data[1])
                 G=Graph(data[2])
-                result=precoloring_extension(max_num_colors,num_verts_to_precolor,G)
+                result=precoloring_extension(max_num_colors,num_verts_to_precolor,G,res,mod,splitlevel)
                 if result:
                     print(f"G is reducible!")
                 else:
@@ -169,7 +181,7 @@ import sys
 if __name__=="__main__":
 
     if len(sys.argv)<2:
-        print("SYNTAX: precoloring_extension_sage.sage <filename.txt>")
+        print("SYNTAX: precoloring_extension_sage.sage <filename.txt> res mod splitlevel")
         exit(99)
 
-    read_input(sys.argv[1])
+    read_input(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),int(sys.argv[4]),)
