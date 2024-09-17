@@ -31,8 +31,8 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
     
     while v>0:
         
-        #s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
-        #print(f"Starting main loop {v=} c={s}")
+        s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
+        print(f"Starting main loop {v=} c={s}")
         
         # We look for a valid color for v, starting with c[v].
         good_color_found=False
@@ -61,7 +61,7 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
             # if we have now colored all precolored vertices, then try to reuse previous extension
             # Should we do this before advancing v?
             if (v==num_verts_to_precolor) and reuse_extension:
-                print("We are reusing the extension!")
+                #print("We are reusing the extension!")
                 while v<n:
                     # We check if c[v] is a valid color, ie, the color does not appear on a previous neighbor.
                     for w in G.neighbors(v):
@@ -114,7 +114,7 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G):
                 # unless we had been trying to reuse the previous extension
                 if reuse_extension:
                     #THOUGHT: If we're counting precolorings, then no need to re-use extensions.
-                    # print("Reusing extension failed, trying to extend from scratch.")
+                    #print("Reusing extension failed, trying to extend from scratch.")
                     reuse_extension=False
                     # advance to the next vertex
                     v+=1
