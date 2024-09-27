@@ -183,6 +183,11 @@ long long int verify
     printf("Done initializing color bit masks.\n");
     //*/
     
+    // initialize max_color_to_try
+    for (v=0; v<n; v++)
+        max_color_to_try[v]=-1;
+    mask_skip_max_color_to_try=(BIT_MASK)0;
+    
     // initialization
     c[0]=1;  // we can assume that vertex 0 is colored 1
     max_color_to_try[0]=1;
