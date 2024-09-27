@@ -1,10 +1,11 @@
 #!/usr/bin/env sage
 
-# Script to compute precoloring extension for graphs.
+# Sage program to verify precoloring extension for graphs.
 
 
 def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                           res,mod,splitlevel,  # for parallelization
+                          debuglevel=0,  # int, for controlling how much debugging info to print
                           ):
 
     n=G.num_verts()
@@ -35,8 +36,9 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
     
     while v>0:
         
-        s=", ".join([f"{x}:{c[x]}" for x in range(v+1)])
-        print(f"Starting main loop {v=} c={s}")
+        if debuglevel>=2:
+            s=" ".join([f"{x}:{c[x]}" for x in range(v+1)])
+            print(f"Starting main loop {v=} c={s}")
         
         # We look for a valid color for v, starting with c[v].
         good_color_found=False
@@ -157,31 +159,40 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
     return True  # no bad precolorings found, all precolorings extend
 
 
-def read_input(input_filename: str,
-               res:int, mod:int, splitlevel:int):
-    # Read file input_filename and parse each line for precoloring extension.
-
-    with open(input_filename,'rt') as f:
-        for line in f:
-            if line.startswith('>'):
-                continue
-            else:
-                data=line.strip().split(',')
-                max_num_colors=int(data[0])
-                num_verts_to_precolor=int(data[1])
-                G=Graph(data[2])
-                result=precoloring_extension(max_num_colors,num_verts_to_precolor,G,res,mod,splitlevel)
-                if result:
-                    print(f"G is reducible!")
-                else:
-                    print("G has a bad precoloring!")
-
 import sys
 
 if __name__=="__main__":
 
-    if len(sys.argv)<2:
-        print("SYNTAX: precoloring_extension_sage.sage <filename.txt> res mod splitlevel")
+    if len(sys.argv)==0:
+        print("SYNTAX: precolor_extend_sage.sage res mod splitlevel [debuglevel=0]")
         exit(99)
+    elif len(sys.argv)<4:
+        res=0
+        mod=1
+        splitlevel=2
+        debuglevel=0
+    else:
+        res=int(sys.argv[1])
+        mod=int(sys.argv[2])
+        splitlevel=int(sys.argv[3])
+    
+    if len(sys.argv)<5:
+        debuglevel=0
+    else:
+        debuglevel=int(sys.argv[4])
+    
+    
+    for line in sys.stdin:  # We read from stdin to match the C++ program.
+        if line.startswith('>'):  # comment
+            continue
+        else:
+            data=line.strip().split(',')
+            max_num_colors=int(data[0])
+            num_verts_to_precolor=int(data[1])
+            G=Graph(data[2])
+            result=precoloring_extension(max_num_colors,num_verts_to_precolor,G,res,mod,splitlevel,debuglevel)
+            if result:
+                print("G is reducible!")
+            else:
+                print("G has a bad precoloring!")
 
-    read_input(sys.argv[1],int(sys.argv[2]),int(sys.argv[3]),int(sys.argv[4]),)
