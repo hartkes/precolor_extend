@@ -342,6 +342,18 @@ long long int verify
                     mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // Should this be v-1???  No, v seems correct: it will then have bits 0..v-1 set.
                     for (i=max_num_colors; i>0; i--)
                         color_mask[i]&=mask_reuse_extension_vertices;  // this also clears v's color
+
+                        
+                    // we also need to correctly set mask_skip_max_color_to_try
+                    // TODO: Do we also need to modify max_color_to_try?
+                    for (int u=1; u<=v; u++)  // we assume u=0 is okay
+                        if (max_color_to_try[u]==max_num_colors)
+                        {
+                            // The bits of mask_skip_max_color_to_try should be 1 for the vertices *after* the first vertex with max_color_to_try[u]==max_num_colors.
+                            mask_skip_max_color_to_try=( ~(( ((BIT_MASK)1)<<(u+1) )-1) ) & mask_first_n_bits;
+                            break;
+                        }
+                    
                     continue;  // we need to search for a good color for v, so go back the beginning of the main loop
                 }
                 //else  // we could put this is a successful color extension, but we will instead let this fall through to the code below.
