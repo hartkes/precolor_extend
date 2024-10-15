@@ -119,16 +119,15 @@ long long int verify
     int n=G->n;  // the total number of vertices in the graph
     int *c=new int[n];  // the color on each vertex
     int *max_color_to_try=new int[n];
-    int v;  // the current vertex
-    int i,j;
-    int good_color_found;  // flag indicating if c[v] is a valid color for v
+    int v=0;  // the current vertex
+    int good_color_found=0;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
     long long int num_restarts_extension=0;  // number of precolorings where we could not reuse the previous extension, but had to restart the process
     
     int reuse_extension=0;  // flag indicating if we should try to use the previous color extension after a new precoloring is made
     
-    int odometer;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
+    int odometer=0;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
     
     // We will color the vertices with the colors 1..max_num_colors, but counting down.
     // In the loop, we attempt to color the vertex with the color c[v].
@@ -147,13 +146,13 @@ long long int verify
     BIT_MASK *nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the (previous) neighbors of each vertex
     BIT_MASK *color_mask=new BIT_MASK[max_num_colors+1];  // 1-indexed by color; we still need c[v] to index the color_mask array
             // the v-th bit of color_mask[i] indicates if v is colored with color i.
-    BIT_MASK cur_mask;  // a single bit set in the position corresponding to the current vertex, v
-    BIT_MASK mask_extended_vertices;  // a mask to clear the colors on vertices beyond the precolored vertices
-    BIT_MASK mask_first_n_bits;  // mask with first n positions set; used to test with cur_mask when v<n
-    BIT_MASK mask_skip_max_color_to_try;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
-    BIT_MASK mask_bit_set_splitlevel;  // mask with one bit set in position splitlevel
+    BIT_MASK cur_mask=0;  // a single bit set in the position corresponding to the current vertex, v
+    BIT_MASK mask_extended_vertices=0;  // a mask to clear the colors on vertices beyond the precolored vertices
+    BIT_MASK mask_first_n_bits=0;  // mask with first n positions set; used to test with cur_mask when v<n
+    BIT_MASK mask_skip_max_color_to_try=0;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
+    BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
     
-    BIT_MASK mask_reuse_extension_vertices;  // mask for clearing for the reuse extension vertices
+    BIT_MASK mask_reuse_extension_vertices=0;  // mask for clearing for the reuse extension vertices
     
     
     //printf("Initializing bit masks...\n");
