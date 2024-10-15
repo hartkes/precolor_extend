@@ -113,7 +113,8 @@ long long int verify
            int res, int mod, int splitlevel,
            BIT_MASK vertices_in_orbit_with_previous,
            int limit_number_of_bad_precolorings,  // limit on number of bad precolorings
-           long long int *count_precolorings_to_return  // to be returned out
+           long long int *count_precolorings_to_return,  // to be returned out
+           int debuglevel  // verbosity for debug logging
           )
 {
     int n=G->n;  // the total number of vertices in the graph
@@ -229,23 +230,27 @@ long long int verify
         // Note that we will never change the color of vertex 0, which is always colored with color 1.
         
         
-        /* Displaying v and c[] at the beginning of the main loop.
-        if (1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+        #ifdef DEBUG
+        if (debuglevel>=2)
         {
-            printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
-            for (i=0; i<=v; i++)
-                //printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
-                printf("%d:%d ",i,c[i]);
-            printf("\n");
-            if (0)
-                for (i=1; i<=max_num_colors; i++)
-                {
-                    printf("color_mask[%2d]=",i);
-                    print_binary(color_mask[i],sizeof(color_mask[i])*8);
-                    printf("\n");
-                }
+            // Displaying v and c[] at the beginning of the main loop.
+            if (v==num_verts_to_precolor-1)//(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+            {
+                printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
+                for (int i=0; i<=v; i++)
+                    //printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
+                    printf("%d:%d ",i,c[i]);
+                printf("\n");
+                if (0)
+                    for (int i=1; i<=max_num_colors; i++)
+                    {
+                        printf("color_mask[%2d]=",i);
+                        print_binary(color_mask[i],sizeof(color_mask[i])*8);
+                        printf("\n");
+                    }
+            }
         }
-        //*/
+        #endif
         
         // We check if c[v] is valid, and if not, increment it.
         good_color_found=0;  // at the moment, we don't know that c[v] is valid.
@@ -585,7 +590,8 @@ int splitlevel_heuristic
                0,1,H->n,
                vertices_in_orbit_with_previous,
                0,  // do not limit bad precolorings, though we won't find them here
-               &count_all_precolorings
+               &count_all_precolorings,
+               0  // no debugging
               );
         delete H;
         
@@ -614,6 +620,8 @@ int main(int argc, char *argv[])
     
     int limit_number_of_bad_precolorings=100;  // how many bad precolorings to see before bombing out
     
+    int debuglevel=0;  // how verbose to be when debugging
+    
     UndirectedGraph *G;
     G=new UndirectedGraph();
     
@@ -634,7 +642,7 @@ int main(int argc, char *argv[])
     mod=-1;
     
     // parse the command line
-    while ((opt=getopt(argc,argv,"r:m:s:b:"))!=-1)  // the colons indicate the options take required arguments
+    while ((opt=getopt(argc,argv,"r:m:s:b:d:"))!=-1)  // the colons indicate the options take required arguments
     {
         switch (opt)
         {
@@ -652,9 +660,12 @@ int main(int argc, char *argv[])
                 if (limit_number_of_bad_precolorings==-1)  // no limit
                     limit_number_of_bad_precolorings=INT_MAX;  // largest integer
                 break;
+            case 'd':
+                sscanf(optarg,"%d",&debuglevel);
+                break;
             case '?':
                 printf("Error parsing command line arguments; problem with option %c\n",optopt);
-                printf("USAGE: precolor_extend -r residue -m modulus [-s splitlevel] [-b # bad precolorings]\n");
+                printf("USAGE: precolor_extend -r residue -m modulus [-s splitlevel] [-b # bad precolorings] [-d debuglevel; 0 for none, increasing int for more]\n");
                 printf("-r and -m must be used together; -s can only be used if -r/-m also are.\n");
                 exit(8);
             default:
@@ -734,7 +745,8 @@ int main(int argc, char *argv[])
                                       res,mod,splitlevel,
                                       vertices_in_orbit_with_previous,
                                       limit_number_of_bad_precolorings,
-                                      &count_all_precolorings
+                                      &count_all_precolorings,
+                                      debuglevel
                                      );
         
         //printf("Number of all precolorings: %lld\n",count_all_precolorings);
