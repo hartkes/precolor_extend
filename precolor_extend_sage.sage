@@ -6,6 +6,7 @@
 def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                           res,mod,splitlevel,  # for parallelization
                           debuglevel=0,  # int, for controlling how much debugging info to print
+                                         # 0 is no extra debug info; higher numbers for more info.
                           ):
 
     n=G.num_verts()
@@ -62,9 +63,9 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
             # parallelization
             if v==splitlevel:
                 odometer=(odometer+1) % mod
-                print(f"at splitlevel {v=} {odometer=} {res=}")
+                if debuglevel>=3:
+                    print(f"at splitlevel {v=} {odometer=} {res=}")
                 if odometer!=res:
-                    print(f"continuing!")
                     c[v]-=1
                     continue  # do not advance v, continue on main while loop
             
