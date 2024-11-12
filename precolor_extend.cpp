@@ -161,7 +161,7 @@ long long int verify
     for (v=0; v<n; v++)
     {
         nbrhd_mask[v]=0;
-        for (i=v-1; i>=0; i--)
+        for (int i=v-1; i>=0; i--)
         {
             nbrhd_mask[v]<<=1;
             nbrhd_mask[v]|=(BIT_MASK)G->get_adj_sorted(i,v);  // set the low bit if i and v are adjacent
@@ -173,7 +173,7 @@ long long int verify
         //*/
     }
     //printf("Done initializing neighborhood bit masks.\n");
-    for (i=max_num_colors; i>0; i--)
+    for (int i=max_num_colors; i>0; i--)
         color_mask[i]=0;
     mask_extended_vertices=(((BIT_MASK)1)<<num_verts_to_precolor)-1;  // also clear bit num_verts_to_precolor-1
     /*
@@ -344,7 +344,7 @@ long long int verify
                 {
                     //printf("Reusing extension, fast forward to %d, n=%d, num_verts_to_precolor=%d\n",v,n,num_verts_to_precolor);
                     mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // Should this be v-1???  No, v seems correct: it will then have bits 0..v-1 set.
-                    for (i=max_num_colors; i>0; i--)
+                    for (int i=max_num_colors; i>0; i--)
                         color_mask[i]&=mask_reuse_extension_vertices;  // this also clears v's color
 
                         
@@ -433,7 +433,7 @@ long long int verify
                         printf("count_precolorings=");
                         print_long(count_precolorings,20);
                         printf("  c=");
-                        for (i=0; i<num_verts_to_precolor; i++)
+                        for (int i=0; i<num_verts_to_precolor; i++)
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
                     }
@@ -493,7 +493,7 @@ long long int verify
                 
                 // So we print this bad precoloring to report the failure.
                 printf("Bad precoloring, count=%5d,            c=",num_precolorings_that_dont_extend);
-                for (i=0; i<=v; i++)  // only print the vertices that are precolored
+                for (int i=0; i<=v; i++)  // only print the vertices that are precolored
                     printf("%d:%d ",i,c[i]);
                 printf("\n");
                 
