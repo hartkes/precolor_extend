@@ -151,6 +151,8 @@ long long int verify
     BIT_MASK mask_extended_vertices=0;  // a mask to clear the colors on vertices beyond the precolored vertices
     BIT_MASK mask_first_n_bits=0;  // mask with first n positions set; used to test with cur_mask when v<n
     BIT_MASK mask_skip_max_color_to_try=0;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
+    BIT_MASK mask_all_extension_vertices=0;  // mask with bits set for all extenion vertices, ie, num_verts_to_precolor..n-1
+    
     BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
     
     BIT_MASK mask_reuse_extension_vertices=0;  // mask for clearing for the reuse extension vertices
@@ -186,7 +188,14 @@ long long int verify
     // initialize max_color_to_try
     for (v=0; v<n; v++)
         max_color_to_try[v]=-1;
-    mask_skip_max_color_to_try=(BIT_MASK)0;
+    mask_all_extension_vertices=
+                ((((BIT_MASK)1)<<n)-1)  // sets the first n bits
+               -((((BIT_MASK)1)<<num_verts_to_precolor)-1);  // zeros the bits of the precolored verts
+    mask_skip_max_color_to_try=mask_all_extension_vertices;
+        /* We will not limit the colors that are used on the extension vertices.
+         * The reason is that if we re-use a coloring of the extension vertices, it might not be a "valid" coloring respecting the new precoloring's max used color.
+         * Additionally, updating the auxiliary variables of max_color_to_try and mask_skip_max_color_to_try is quite difficult when partially re-using a previous coloring of the extension vertices.
+         */
     
     // initialization
     c[0]=1;  // we can assume that vertex 0 is colored 1
@@ -234,12 +243,20 @@ long long int verify
         if (debuglevel>=2)
         {
             // Displaying v and c[] at the beginning of the main loop.
-            if (v==num_verts_to_precolor-1)//(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
+            if (1)//(v==num_verts_to_precolor-1)//(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
             {
-                printf(" v=%d n=%d count_precolorings=%10lld c=",v,n,count_precolorings);
+                printf("StartMainLoop v=%2d c=",v);
                 for (int i=0; i<=v; i++)
-                    //printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
                     printf("%d:%d ",i,c[i]);
+                printf("\n");
+                
+            /*
+                printf(" v=%2d n=%2d count_precolorings=%10lld max_c= ",v,n,count_precolorings);
+                for (int i=0; i<=v; i++)
+                    printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
+                    //printf("%d:%d ",i,c[i]);
+                printf(" mask_skip_max_color_to_try=");
+                print_binary(mask_skip_max_color_to_try,n);
                 printf("\n");
                 if (0)
                     for (int i=1; i<=max_num_colors; i++)
@@ -248,6 +265,7 @@ long long int verify
                         print_binary(color_mask[i],sizeof(color_mask[i])*8);
                         printf("\n");
                     }
+            */
             }
         }
         #endif
@@ -330,7 +348,7 @@ long long int verify
                         //TODO: replace this with a bit check
                 && reuse_extension)  // we will check how much of the previous color extension we can use by "fast forwarding", ie, just checking the colors that are there.
             {
-                //printf("Trying to reuse extension\n");
+                printf("Trying to reuse extension\n");
                 while (
                        (cur_mask & mask_first_n_bits)  // same as (v<n)
                        &&
@@ -339,25 +357,20 @@ long long int verify
                 {
                     v++;  // advance v
                     cur_mask<<=1;
-                }
+                    
+                    // use the value that is already in c[v]; do not update it
+                    
+                    // We do not need to update the auxiliary variables, since cur_mask & mask_skip_max_color_to_try is nonzero.
+                }  // end of while loop advancing v while re-using the previous color extension
+                
                 if (cur_mask & mask_first_n_bits)  // same as (v<n)
                 {
                     //printf("Reusing extension, fast forward to %d, n=%d, num_verts_to_precolor=%d\n",v,n,num_verts_to_precolor);
                     mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // Should this be v-1???  No, v seems correct: it will then have bits 0..v-1 set.
                     for (int i=max_num_colors; i>0; i--)
                         color_mask[i]&=mask_reuse_extension_vertices;  // this also clears v's color
-
-                        
-                    // we also need to correctly set mask_skip_max_color_to_try
-                    // TODO: Do we also need to modify max_color_to_try?
-                    for (int u=1; u<=v; u++)  // we assume u=0 is okay
-                        if (max_color_to_try[u]==max_num_colors)
-                        {
-                            // The bits of mask_skip_max_color_to_try should be 1 for the vertices *after* the first vertex with max_color_to_try[u]==max_num_colors.
-                            mask_skip_max_color_to_try=( ~(( ((BIT_MASK)1)<<(u+1) )-1) ) & mask_first_n_bits;
-                            break;
-                        }
                     
+                    c[v]--;  // advance c[v] to the next color
                     continue;  // we need to search for a good color for v, so go back the beginning of the main loop
                 }
                 //else  // we could put this is a successful color extension, but we will instead let this fall through to the code below.
@@ -402,7 +415,7 @@ long long int verify
                         else
                             max_color_to_try[v]=max_color_to_try[v-1];
                         
-                        mask_skip_max_color_to_try=0;
+                        mask_skip_max_color_to_try=mask_all_extension_vertices;  // reset to allowing all colors for the extension vertices
                     }
                     
                     if ((cur_mask & vertices_in_orbit_with_previous)!=0)

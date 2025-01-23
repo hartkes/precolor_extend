@@ -38,8 +38,11 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
     while v>0:
         
         if debuglevel>=2:
-            s=" ".join([f"{x}:{c[x]}" for x in range(v+1)])
-            print(f"Starting main loop {v=} c={s}")
+            #s=" ".join([f"{x}:{c[x]}" for x in range(v+1)])
+            print(f"StartMainLoop {v=:2} c=",end='')
+            for i in range(v+1):
+                print(f"{i}:{c[i]} ",end='')
+            print()  # newline
         
         # We look for a valid color for v, starting with c[v].
         good_color_found=False
@@ -87,6 +90,12 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                         continue  # advance v to next vertex
                     
                     break  # out of while loop
+                
+                if v<n:
+                    # We have partially reused the previous extension, but the previous extension is not completely good.  So we will continue searching for a good extension, continuing at v.
+                    c[v]-=1  # advance the color
+                    continue  #  continue the main loop
+            
             
             if v==n:  # all vertices have been colored, we have successfully extended the precoloring
                 count_precolorings+=1
@@ -100,21 +109,37 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                 
                 # go back to beginning of while loop
             else:
-                if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
-                    if c[v-1]==min( max(c[:v-1])+1, max_num_colors ):  # v-1 used a new color
-                        c[v]=min( c[v-1]+1, max_num_colors )  # v can use a new color, if this doesn't exceed max_num_colors
-                    else:
-                        # We set the color of v to be less than the color of v-1, to break symmetry.
-                        # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
-                        c[v]=c[v-1]-1
-                    
+                if v>=num_verts_to_precolor:
+                    # We do not constrain the colors used for the extension vertices.
+                    c[v]=max_num_colors
                 else:
-                    c[v]=min( max(c[:v])+1, max_num_colors )
-                        # TODO: check that this is what the C++ code does
-                        # TODO: Is this what max_color_to_try is?
-                    
-                # TODO: re-using extensions
-                # TODO: parallelization
+                    if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
+                        if c[v-1]==max_num_colors:
+                            # All colors have already been seen, and we want the color of c[v] to be different than c[v-1] (since they are adjacent).
+                            # We set the color of v to be less than the color of v-1, to break symmetry.
+                            # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
+                            c[v]=c[v-1]-1
+                            
+                        elif c[v-1]==max(c[:v-1])+1:  # v-1 used a new color
+                            c[v]=c[v-1]+1  # v can use a new color
+                            # Note this will not exceed max_num_colors because of the previous case.
+                            
+                        else:
+                            # We set the color of v to be less than the color of v-1, to break symmetry.
+                            # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
+                            c[v]=c[v-1]-1
+                        
+                    else:
+                        # On the vertices 0..v-1, the colors used are exactly 1..max(c[:v]).
+                        # This means that every color in that range appears on one of those vertices.
+                        assert(
+                               set( c[i] for i in range(v) ) ==
+                               set( range(1,max(c[:v])+1) )
+                              )
+                        
+                        c[v]=min( max(c[:v])+1, max_num_colors )
+                            # TODO: check that this is what the C++ code does
+                            # TODO: Is this what max_color_to_try is?
                 
                 # go back to beginning of while loop
         
@@ -130,22 +155,18 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                     #THOUGHT: If we're counting precolorings, then no need to re-use extensions.
                     #print("Reusing extension failed, trying to extend from scratch.")
                     reuse_extension=False
-                    # advance to the next vertex
-                    v+=1
                     
-                    # Set c[v].  This is code copied from above.  Can we be smarter and reuse that code somehow?
-                    if v in vertices_in_orbit_with_previous:  # break symmetry with the previous vertex
-                        if c[v-1]==min( max(c[:v-1])+1, max_num_colors ):  # v-1 used a new color
-                            c[v]=min( c[v-1]+1, max_num_colors )  # v can use a new color, if this doesn't exceed max_num_colors
-                        else:
-                            # We set the color of v to be less than the color of v-1, to break symmetry.
-                            # Note that v is adjacent to v-1 (since same closed neighborhood), and thus c[v] cannot equal c[v-1].
-                            c[v]=c[v-1]-1
-                        
-                    else:
-                        c[v]=min( max(c[:v])+1, max_num_colors )
-                            
-                            
+                    continue  # continue the main loop, so c[v] is not changed
+                    
+                    # To match the C++ code, we keep v here but do not change c[v], and then we restart the main loop.
+                    #NOTE:  Do we want this to do this?
+# #                     # advance to the next vertex, and start "fresh" to find an extension.
+# #                     v+=1
+# #                     
+# #                     # Set c[v].
+# #                     # We do not constrain the colors used for the extension vertices.
+# #                     c[v]=max_num_colors
+                    
                 else:  # we have failed to extend even when starting fresh
                     print(f"Bad precoloring! {c=}")
                     return False
