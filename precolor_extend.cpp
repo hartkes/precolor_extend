@@ -198,16 +198,18 @@ long long int verify
          */
     
     // initialization
-    c[0]=1;  // we can assume that vertex 0 is colored 1
-    max_color_to_try[0]=1;
-    cur_mask=(BIT_MASK)1;  // bit set in 0th position
-    color_mask[1]|=cur_mask;  // the low bit (vertex 0) is set for color 1
+    v=0;  // the first vertex is 0; we will color vertex 0 with color 1 and never change its color.
+    c[v]=1;  // we can assume that vertex 0 is colored 1
+    max_color_to_try[v]=1;
+    cur_mask=((BIT_MASK)1)<<v;  // bit set in 0th position
+    color_mask[c[v]]|=cur_mask;  // the low bit (vertex 0) is set for color 1
     
-    v=1;  // we'll actually start with vertex 1
+    v++;  // we'll actually start with vertex 1
     cur_mask<<=1;
     max_color_to_try[v]=2;
-    c[v]=2;  // first we'll trying coloring vertex 1 with color 2
+    c[v]=max_color_to_try[v];  // first we'll trying coloring vertex 1 with color 2
     // note that no color_mask bit is set for v=1 because we haven't tested the color yet (see comment in while loop that searches for a good color for v)
+    // Note that we do not check if vertex 1 is in an orbit with vertex 2, since vertex 0 is fixed to color 0.
     
     mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
     /*
