@@ -118,7 +118,7 @@ long long int verify
            int debuglevel  // verbosity for debug logging
           )
 {
-    int n=G->n;  // the total number of vertices in the graph
+    const int n=G->n;  // the total number of vertices in the graph
     std::vector<int> c(n);  // the color on each vertex
     int v=0;  // the current vertex
     bool good_color_found=false;  // flag indicating if c[v] is a valid color for v
@@ -208,7 +208,7 @@ long long int verify
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
     
-    while (1)  // main loop, runs when v>0, but the exit condition will be checked only when backtracking
+    while (true)  // main loop, runs when v>0, but the exit condition will be checked only when backtracking
     {
         // When we start the loop, we are attempting to color v with c[v], and we need to check if c[v] is valid.
         // If c[v] is valid, then we move to the next vertex.
