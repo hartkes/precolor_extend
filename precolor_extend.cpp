@@ -408,13 +408,7 @@ long long int verify
                     c[v]--;  // decrement color
                     
                     reuse_extension=true;  // after we find the next precoloring, try to reuse this color extension
-                    
-                    /* We will keep the color_masks for the fast_forward.
-                    // we need to clear the color_masks for the vertices from v to n
-                    for (i=max_num_colors; i>0; i--)
-                        color_mask[i]&=mask_extended_vertices;  // this also clears v's color
-                    */
-                    
+                        // We keep the values in color_masks so that we can reuse the extension coloring.
                 }
         }
         else // we've gone too far in the colors (no color is available for v) and so need to backtrack
