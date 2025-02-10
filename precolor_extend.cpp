@@ -387,11 +387,19 @@ long long int verify
                 {
                     // we have colored (properly) all of the vertices, and so have a good coloring
                     
-                    //printf("We have a good coloring! v=%d\n",v);
+                    #ifdef DEBUG
+                    if (debuglevel>=1)
+                    {
+                        printf("PrecoloringExtended c=");
+                        for (int i=0; i<num_verts_to_precolor; i++)
+                            printf("%d:%d ",i,c[i]);
+                        printf("\n");
+                    }
+                    #endif
+                    
                     count_precolorings++;
-                    //if (count_precolorings%1000000==0)  // change this to an & statement
+                    /*
                     if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
-                    //if (1)
                     {
                         //printf("count_precolorings=%14lld",count_precolorings);
                         printf("count_precolorings=");
@@ -401,6 +409,7 @@ long long int verify
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
                     }
+                    //*/
                     
                     // we need to backtrack and advance to the next precoloring
                     v=num_verts_to_precolor-1;
@@ -432,15 +441,6 @@ long long int verify
                     
                     num_restarts_extension++;
                     
-                    /*
-                    printf("count_precolorings=");
-                    print_long(count_precolorings,20);
-                    printf("  c=");
-                    for (i=0; i<num_verts_to_precolor; i++)
-                        printf("%d:%d ",i,c[i]);
-                    printf("\n");
-                    */
-                    
                     //NOTE: We don't need to clear color_mask, since it should have been handled when backtracking to this point.
                     
                     continue;  // go to beginning of the main loop
@@ -470,9 +470,10 @@ long long int verify
     
     }  // end of main while loop
     
-    printf("final count_precolorings=%lld  num_restarts_extension=%lld  ratio=%.2f\n",count_precolorings,num_restarts_extension,
-                                                                           ((double)count_precolorings)/((double)num_restarts_extension)
-                                                                           );
+    printf("final count_precolorings=%lld  num_restarts_extension=%lld  ratio=%.2f\n",
+           count_precolorings,num_restarts_extension,
+           ((double)count_precolorings)/((double)num_restarts_extension)
+           );
     
     *count_precolorings_to_return=count_precolorings;
     return num_precolorings_that_dont_extend;
