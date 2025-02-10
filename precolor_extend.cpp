@@ -174,9 +174,6 @@ long long int verify
     
     const BIT_MASK mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // mask with first n positions set; used to test with cur_mask when v<n
     
-// WANT TO GET RID OF THIS
-    BIT_MASK mask_skip_max_color_to_try=0;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
-    
     const BIT_MASK mask_extension_vertices=  // mask with bits set for all extension vertices, ie, num_verts_to_precolor..n-1
                 ((((BIT_MASK)1)<<n)-1)  // sets the first n bits
                -((((BIT_MASK)1)<<num_verts_to_precolor)-1);  // zeros the bits of the precolored verts
