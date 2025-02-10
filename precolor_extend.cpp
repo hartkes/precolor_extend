@@ -31,6 +31,7 @@
 
 
 #include <cstdlib>
+#include <vector>
 #include <cstdio>
 #include <unistd.h>  // to use getopt to parse the command line
 #include <climits>  // for INT_MAX
@@ -118,7 +119,7 @@ long long int verify
           )
 {
     int n=G->n;  // the total number of vertices in the graph
-    int *c=new int[n];  // the color on each vertex
+    std::vector<int> c(n);  // the color on each vertex
     int v=0;  // the current vertex
     bool good_color_found=false;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
@@ -143,7 +144,7 @@ long long int verify
     
     
     // We use bit masks to speed up testing if previous neighbors of v are colored with the proposed color c[v].
-    BIT_MASK *nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the (previous) neighbors of each vertex
+    std::vector<BIT_MASK> nbrhd_mask(n);  // a bit mask indicating the (previous) neighbors of each vertex
     
     // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
     for (v=0; v<n; v++)
@@ -159,7 +160,7 @@ long long int verify
     }
     
     
-    BIT_MASK *color_mask=new BIT_MASK[max_num_colors+1];  // 1-indexed by color; we still need c[v] to index the color_mask array
+    std::vector<BIT_MASK> color_mask(max_num_colors+1);  // 1-indexed by color; we still need c[v] to index the color_mask array
             // the v-th bit of color_mask[i] indicates if v is colored with color i.
     
     for (int i=max_num_colors; i>0; i--)
@@ -168,7 +169,7 @@ long long int verify
     BIT_MASK cur_mask=0;  // a single bit set in the position corresponding to the current vertex, v
                           // Thus, we always have that cur_mask==((BIT_MASK)1)<<v.
     
-    int *max_color_to_try=new int[n];  // for each vertex v, the colors max_color_to_try[v]..1 will be tried
+    std::vector<int> max_color_to_try(n);  // for each vertex v, the colors max_color_to_try[v]..1 will be tried
     for (v=0; v<n; v++)
         max_color_to_try[v]=-1;  // initialize to a value that makes it noticeable if not correctly set later
     
@@ -472,12 +473,6 @@ long long int verify
     printf("final count_precolorings=%lld  num_restarts_extension=%lld  ratio=%.2f\n",count_precolorings,num_restarts_extension,
                                                                            ((double)count_precolorings)/((double)num_restarts_extension)
                                                                            );
-    
-    delete[] nbrhd_mask;
-    delete[] color_mask;
-    
-    delete[] c;
-    delete[] max_color_to_try;
     
     *count_precolorings_to_return=count_precolorings;
     return num_precolorings_that_dont_extend;
