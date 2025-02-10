@@ -356,11 +356,12 @@ long long int verify
                 if (cur_mask & mask_first_n_bits)  // same as (v<n)
                 {
                     //printf("Reusing extension, fast forward to %d, n=%d, num_verts_to_precolor=%d\n",v,n,num_verts_to_precolor);
-                    mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // Should this be v-1???  No, v seems correct: it will then have bits 0..v-1 set.
+                    const BIT_MASK mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // this has bits 0..v-1 set.
                     for (int i=max_num_colors; i>0; i--)
                         color_mask[i]&=mask_reuse_extension_vertices;  // this also clears v's color
                     
                     c[v]--;  // advance c[v] to the next color
+                    //TODO: would it be better to set c[v] to max_num_colors?
                     continue;  // we need to search for a good color for v, so go back the beginning of the main loop
                 }
                 //else  // we could put this is a successful color extension, but we will instead let this fall through to the code below.
