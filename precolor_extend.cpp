@@ -195,12 +195,6 @@ long long int verify
     // note that no color_mask bit is set for v=1 because we haven't tested the color yet (see comment in while loop that searches for a good color for v)
     // Note that we do not check if vertex 1 is in an orbit with vertex 2, since vertex 0 is fixed to color 0.
     
-    /*
-    printf("mask_first_n_bits=",mask_first_n_bits);
-    print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8);
-    printf("\n");
-    //*/
-    
     reuse_extension=false;  // no previous color extension to use
     
     if (splitlevel==n)  // a splitlevel of n indicates no parallelization
@@ -212,8 +206,6 @@ long long int verify
     
     odometer=mod;  // initialize the odometer for parallelization; remember that decrementing odometer happens before testing against the residue
     
-    
-    //printf("Starting main loop.\n");
     
     while (1)  // main loop, runs when v>0, but the exit condition will be checked only when backtracking
     {
