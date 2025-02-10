@@ -119,7 +119,6 @@ long long int verify
 {
     int n=G->n;  // the total number of vertices in the graph
     int *c=new int[n];  // the color on each vertex
-    int *max_color_to_try=new int[n];
     int v=0;  // the current vertex
     int good_color_found=0;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
@@ -143,22 +142,9 @@ long long int verify
     // Note that max_color_to_try[v] is always <= max_num_colors, but also satisfies (if possible) max_color_to_try[v]=max(c[0],c[1],...,c[v-1])+1.
     
     
-    // We use bit masks to speed up testing if neighbors of v are colored with the proposed c[v].
+    // We use bit masks to speed up testing if previous neighbors of v are colored with the proposed color c[v].
     BIT_MASK *nbrhd_mask=new BIT_MASK[n];  // a bit mask indicating the (previous) neighbors of each vertex
-    BIT_MASK *color_mask=new BIT_MASK[max_num_colors+1];  // 1-indexed by color; we still need c[v] to index the color_mask array
-            // the v-th bit of color_mask[i] indicates if v is colored with color i.
-    BIT_MASK cur_mask=0;  // a single bit set in the position corresponding to the current vertex, v
-    BIT_MASK mask_extended_vertices=0;  // a mask to clear the colors on vertices beyond the precolored vertices
-    BIT_MASK mask_first_n_bits=0;  // mask with first n positions set; used to test with cur_mask when v<n
-    BIT_MASK mask_skip_max_color_to_try=0;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
-    BIT_MASK mask_all_extension_vertices=0;  // mask with bits set for all extenion vertices, ie, num_verts_to_precolor..n-1
     
-    BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
-    
-    BIT_MASK mask_reuse_extension_vertices=0;  // mask for clearing for the reuse extension vertices
-    
-    
-    //printf("Initializing bit masks...\n");
     // the low bit (0th bit) of a bit mask corresponds to vertex 0, and then in increasing order
     for (v=0; v<n; v++)
     {
@@ -167,35 +153,37 @@ long long int verify
         {
             nbrhd_mask[v]<<=1;
             nbrhd_mask[v]|=(BIT_MASK)G->get_adj_sorted(i,v);  // set the low bit if i and v are adjacent
+            //printf(" Adjacencies: %d %d adj? %d\n",v,i,G->get_adj_sorted(i,v));
         }
-        /*
-        printf("nbrhd_mask[%2d]=",v);
-        print_binary(nbrhd_mask[v],sizeof(nbrhd_mask)*8);
-        printf("\n");
-        //*/
+        //print_binary(nbrhd_mask[v],n); printf("\n");
     }
-    //printf("Done initializing neighborhood bit masks.\n");
+    
+    
+    BIT_MASK *color_mask=new BIT_MASK[max_num_colors+1];  // 1-indexed by color; we still need c[v] to index the color_mask array
+            // the v-th bit of color_mask[i] indicates if v is colored with color i.
+    
     for (int i=max_num_colors; i>0; i--)
         color_mask[i]=0;
-    mask_extended_vertices=(((BIT_MASK)1)<<num_verts_to_precolor)-1;  // also clear bit num_verts_to_precolor-1
-    /*
-    printf("mask_extended_vertices=");
-    print_binary(mask_extended_vertices,sizeof(mask_extended_vertices)*8);
-    printf("\n");
-    printf("Done initializing color bit masks.\n");
-    //*/
     
-    // initialize max_color_to_try
+    BIT_MASK cur_mask=0;  // a single bit set in the position corresponding to the current vertex, v
+                          // Thus, we always have that cur_mask==((BIT_MASK)1)<<v.
+    
+    int *max_color_to_try=new int[n];  // for each vertex v, the colors max_color_to_try[v]..1 will be tried
     for (v=0; v<n; v++)
-        max_color_to_try[v]=-1;
-    mask_all_extension_vertices=
+        max_color_to_try[v]=-1;  // initialize to a value that makes it noticeable if not correctly set later
+    
+    const BIT_MASK mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // mask with first n positions set; used to test with cur_mask when v<n
+    
+// WANT TO GET RID OF THIS
+    BIT_MASK mask_skip_max_color_to_try=0;  // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
+    
+    const BIT_MASK mask_extension_vertices=  // mask with bits set for all extension vertices, ie, num_verts_to_precolor..n-1
                 ((((BIT_MASK)1)<<n)-1)  // sets the first n bits
                -((((BIT_MASK)1)<<num_verts_to_precolor)-1);  // zeros the bits of the precolored verts
-    mask_skip_max_color_to_try=mask_all_extension_vertices;
-        /* We will not limit the colors that are used on the extension vertices.
-         * The reason is that if we re-use a coloring of the extension vertices, it might not be a "valid" coloring respecting the new precoloring's max used color.
-         * Additionally, updating the auxiliary variables of max_color_to_try and mask_skip_max_color_to_try is quite difficult when partially re-using a previous coloring of the extension vertices.
-         */
+
+    
+    BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
+    
     
     // initialization
     v=0;  // the first vertex is 0; we will color vertex 0 with color 1 and never change its color.
@@ -211,7 +199,6 @@ long long int verify
     // note that no color_mask bit is set for v=1 because we haven't tested the color yet (see comment in while loop that searches for a good color for v)
     // Note that we do not check if vertex 1 is in an orbit with vertex 2, since vertex 0 is fixed to color 0.
     
-    mask_first_n_bits=(((BIT_MASK)1)<<n)-1;  // sets the first n bits
     /*
     printf("mask_first_n_bits=",mask_first_n_bits);
     print_binary(mask_first_n_bits,sizeof(mask_first_n_bits)*8);
