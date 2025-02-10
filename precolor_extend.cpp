@@ -235,23 +235,6 @@ long long int verify
             for (int i=0; i<=v; i++)
                 printf("%d:%d ",i,c[i]);
             printf("\n");
-            
-            /*
-                printf(" v=%2d n=%2d count_precolorings=%10lld max_c= ",v,n,count_precolorings);
-                for (int i=0; i<=v; i++)
-                    printf("%d:%d(%d) ",i,c[i],max_color_to_try[i]);
-                    //printf("%d:%d ",i,c[i]);
-                printf(" mask_skip_max_color_to_try=");
-                print_binary(mask_skip_max_color_to_try,n);
-                printf("\n");
-                if (0)
-                    for (int i=1; i<=max_num_colors; i++)
-                    {
-                        printf("color_mask[%2d]=",i);
-                        print_binary(color_mask[i],sizeof(color_mask[i])*8);
-                        printf("\n");
-                    }
-            */
         }
         
         {   // block for local variables
@@ -278,17 +261,18 @@ long long int verify
         while (c[v])  // if c[v] becomes 0, then we have not found a valid color for v
         {
             // When this loop is entered, no color_mask should have a color set for v.
-            /*
-            printf("while loop v=%d c[v]=%d\n",v,c[v]);
-            /*
-            printf("color_mask[c[%2d]]=",c[v]);
-            print_binary(color_mask[c[v]],32);
-            printf("\n");
-            printf("nbrhd_mask[   %2d]=",v);
-            print_binary(nbrhd_mask[v],32);
-            printf("\n");
-            printf("and = %llu  test=%d\n",color_mask[c[v]] & nbrhd_mask[v],(color_mask[c[v]] & nbrhd_mask[v]) == 0);
-            //*/
+            #ifdef DEBUG
+            if (debuglevel>=2)
+            {
+                for (int i=max_num_colors; i>0; i--)
+                    if ( (color_mask[i] & cur_mask) != 0)
+                    {
+                        printf("color_mask set for color %d for vertex v=%d, when it shouldn't be!\n",i,v);
+                        exit(5);
+                    }
+            }
+            #endif
+            
             if ((color_mask[c[v]] & nbrhd_mask[v]) == 0)  // no previous neighbors of v are colored with c[v], so c[v] is a valid color for v
                     // note that bitwise & has lower precedence than equality testing ==
             {
@@ -300,8 +284,6 @@ long long int verify
                 c[v]--;  // we decrement colors
         }
         
-        
-        //printf("v=%d c[v]=%d good_color_found=%d\n",v,c[v],good_color_found);
         
         if (good_color_found)
         {
@@ -338,7 +320,6 @@ long long int verify
                         //TODO: replace this with a bit check
                 && reuse_extension)  // we will check how much of the previous color extension we can use by "fast forwarding", ie, just checking the colors that are there.
             {
-                printf("Trying to reuse extension\n");
                 while (
                        (cur_mask & mask_first_n_bits)  // same as (v<n)
                        &&
@@ -348,14 +329,12 @@ long long int verify
                     v++;  // advance v
                     cur_mask<<=1;
                     
-                    // use the value that is already in c[v]; do not update it
-                    
-                    // We do not need to update the auxiliary variables, since cur_mask & mask_skip_max_color_to_try is nonzero.
+                    // We use the value that is already in c[v]; do not update it.
+                    // We do not need to update max_color_to_try, since it is not used for extension vertices.
                 }  // end of while loop advancing v while re-using the previous color extension
                 
                 if (cur_mask & mask_first_n_bits)  // same as (v<n)
                 {
-                    //printf("Reusing extension, fast forward to %d, n=%d, num_verts_to_precolor=%d\n",v,n,num_verts_to_precolor);
                     const BIT_MASK mask_reuse_extension_vertices=(((BIT_MASK)1)<<v)-1;  // this has bits 0..v-1 set.
                     for (int i=max_num_colors; i>0; i--)
                         color_mask[i]&=mask_reuse_extension_vertices;  // this also clears v's color
