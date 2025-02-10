@@ -120,7 +120,7 @@ long long int verify
     int n=G->n;  // the total number of vertices in the graph
     int *c=new int[n];  // the color on each vertex
     int v=0;  // the current vertex
-    int good_color_found=0;  // flag indicating if c[v] is a valid color for v
+    bool good_color_found=false;  // flag indicating if c[v] is a valid color for v
     int num_precolorings_that_dont_extend=0;  // count of precolorings that do not extend to proper colorings
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
     long long int num_restarts_extension=0;  // number of precolorings where we could not reuse the previous extension, but had to restart the process
@@ -177,7 +177,6 @@ long long int verify
     const BIT_MASK mask_extension_vertices=  // mask with bits set for all extension vertices, ie, num_verts_to_precolor..n-1
                 ((((BIT_MASK)1)<<n)-1)  // sets the first n bits
                -((((BIT_MASK)1)<<num_verts_to_precolor)-1);  // zeros the bits of the precolored verts
-
     
     BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
     
@@ -254,7 +253,7 @@ long long int verify
         #endif
         
         // We check if c[v] is valid, and if not, increment it.
-        good_color_found=0;  // at the moment, we don't know that c[v] is valid.
+        good_color_found=false;  // at the moment, we don't know that c[v] is valid.
         while (c[v])  // if c[v] becomes 0, then we have not found a valid color for v
         {
             // When this loop is entered, no color_mask should have a color set for v.
@@ -274,7 +273,7 @@ long long int verify
                     // note that bitwise & has lower precedence than equality testing ==
             {
                 color_mask[c[v]]|=cur_mask;  // set v's bit for the new color
-                good_color_found=1;  // so we've found a good color c[v] for v
+                good_color_found=true;  // so we've found a good color c[v] for v
                 break;
             }
             else
