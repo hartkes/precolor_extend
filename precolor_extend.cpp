@@ -231,14 +231,11 @@ long long int verify
         #ifdef DEBUG
         if (debuglevel>=2)
         {
-            // Displaying v and c[] at the beginning of the main loop.
-            if (1)//(v==num_verts_to_precolor-1)//(1)//(v==n-1)  //(v>=34) //(1 || v<=14)
-            {
-                printf("StartMainLoop v=%2d c=",v);
-                for (int i=0; i<=v; i++)
-                    printf("%d:%d ",i,c[i]);
-                printf("\n");
-                
+            printf("StartMainLoop v=%2d c=",v);
+            for (int i=0; i<=v; i++)
+                printf("%d:%d ",i,c[i]);
+            printf("\n");
+            
             /*
                 printf(" v=%2d n=%2d count_precolorings=%10lld max_c= ",v,n,count_precolorings);
                 for (int i=0; i<=v; i++)
