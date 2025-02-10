@@ -252,8 +252,25 @@ long long int verify
                         printf("\n");
                     }
             */
+        }
+        
+        {   // block for local variables
+            // sanity test; make sure that c[v] and color_mask are consistent
+            BIT_MASK test_mask;
+            for (int u=0; u<v; u++)
+            {
+                test_mask=((BIT_MASK)1)<<u;
+                for (int j=1; j<=max_num_colors && j<=max_color_to_try[u]; j++)
+                    if (((color_mask[j]&test_mask)!=0) != (j==c[u]))
+                    {
+                        printf("inconsistency in color_mask! v=%d color=%d\n",u,j);
+                        exit(5);
+                    }
             }
         }
+        
+        // TODO: Add sanity check that max_color_to_try[v] is the maximum color used among vertices 0..v-1, plus 1 (if possible); and that all the colors from 1 to max_color_to_try[v] appear on vertices 0..v-1.
+        // This is not quite true.
         #endif
         
         // We check if c[v] is valid, and if not, increment it.
@@ -283,19 +300,6 @@ long long int verify
                 c[v]--;  // we decrement colors
         }
         
-        /* sanity test; make sure that c[v] and color_mask are consistent
-        BIT_MASK test_mask;
-        for (int u=0; u<=v; u++)
-        {
-            test_mask=((BIT_MASK)1)<<u;
-            for (j=1; j<=max_num_colors && j<=max_color_to_try[u]; j++)
-                if (((color_mask[j]&test_mask)!=0) != (j==c[u]))
-                {
-                    printf("inconsistency! v=%d color=%d\n",u,j);
-                    exit(5);
-                }
-        }
-        //*/
         
         //printf("v=%d c[v]=%d good_color_found=%d\n",v,c[v],good_color_found);
         
