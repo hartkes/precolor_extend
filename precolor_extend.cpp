@@ -378,61 +378,53 @@ long long int verify
                 //else  // we could put this is a successful color extension, but we will instead let this fall through to the code below.
             }
             
-            if (cur_mask & mask_skip_max_color_to_try)  // if we have already colored a vertex with max_num_colors, then we won't bother with the max_color_to_try
-                // Note that this implies that v<n because of the AND with mask_first_n_bits.
-                if ((cur_mask & vertices_in_orbit_with_previous)!=0)
-                    // vertex v is in orbit with the previous vertex, and so should have a color less than v-1
-                    c[v]=c[v-1]-1;
-                else
-                    c[v]=max_num_colors;
+            if (cur_mask & mask_extension_vertices)  // v is an extension vertex, so we use the full range of colors.
+                // Note that we do not take into account vertices in orbit with the previous vertex.
+                // Also note this implies that v<n.
+                c[v]=max_num_colors;
             else
                 if (cur_mask & mask_first_n_bits)  // same as (v<n)
-                    // If we have not gone beyond all of the vertices in the graph, then v is a vertex needing to be colored.
-                    // We reset its color.
+                    // In fact, we know that v is a precolored vertex.
+                    // v is a vertex needing to be colored, we reset its color.
                 {
-                    if (max_color_to_try[v-1]==max_num_colors)
-                    {
-                        max_color_to_try[v]=max_num_colors;  // or could be max_color_to_try[v-1], maybe can combine statement
-                        mask_skip_max_color_to_try=( ~(( ((BIT_MASK)1)<<(v+1) )-1) ) & mask_first_n_bits;
-                            // mask with bits set for positions *after* the first vertex v where c[v]==max_num_colors
-                            // Note that we also AND with mask_first_n_bits so that we can easily test the conditions "beyond max_color_to_try" and "v<n" simultaneously.
-                        
-                        /*
-                        printf("v=%2d  mask_skip_max_color_to_try=",v);
-                        print_binary(mask_skip_max_color_to_try,n);
-                        printf("\n");
-                        printf("                        cur_mask=");
-                        print_binary(cur_mask,n);
-                        printf("\n");
-                        printf(" v=%d  c=",v);
-                        for (i=0; i<=v; i++)
-                            printf("%d:%d ",i,c[i]);
-                        printf("\n");
-                        //*/
-                    }
-                    else  // max_color_to_try[v-1]<max_num_colors
-                    {
-                        if (c[v-1]==max_color_to_try[v-1])
-                            max_color_to_try[v]=max_color_to_try[v-1]+1;
-                        else
-                            max_color_to_try[v]=max_color_to_try[v-1];
-                        
-                        mask_skip_max_color_to_try=mask_all_extension_vertices;  // reset to allowing all colors for the extension vertices
-                    }
-                    
                     if ((cur_mask & vertices_in_orbit_with_previous)!=0)
                         // vertex v is in orbit with the previous vertex, and so should have a color less than v-1, unless v-1 had used a new color
                         // There is a subtlety about combining counting down, using at most one new color, and the consecutive vertices in orbits.
                         // If v-1 and v are in orbits, then in general we want c[v]<c[v-1].  But if c[v-1] is a new color, then we need for c[v] to also possibly be a new color, which would be c[v-1]+1.
-                        if (c[v-1]==max_color_to_try[v-1])  // v-1 used a new color
+                    {
+                        if (
+                            (c[v-1]==max_color_to_try[v-1])  // v-1 used a new color
+                            &&
+                            (max_color_to_try[v-1]<max_num_colors)  // there is a new color for v to use
+                           )
+                        {
+                            max_color_to_try[v]=max_color_to_try[v-1]+1;
                             c[v]=max_color_to_try[v];  // there's the possibility c[v] will also have a new color
+                        }
                         else
+                        {
+                            max_color_to_try[v]=max_color_to_try[v-1];
                             c[v]=c[v-1]-1;
-                    else
+                            // The "-1" here comes from the fact that we assume that v and v-1 have the same closed neighborhood, and hence are adjacent.
+                            // Thus, v and v-1 cannot have the same color.
+                        }
+                    }
+                    else  // v is a precolored vertex that is not in an orbit with the previous vertex
+                    {
+                        // There is some optimization of the flow control by putting this test first.
+                        if (max_color_to_try[v-1]==max_num_colors)
+                            // v-1 could use the full range of colors, so v can, too.
+                            max_color_to_try[v]=max_num_colors;
+                        else  // max_color_to_try[v-1]<max_num_colors, so we can add 1 without exceeding max_num_colors
+                        {
+                            if (c[v-1]==max_color_to_try[v-1])  // v-1 used a new color
+                                max_color_to_try[v]=max_color_to_try[v-1]+1;  // so v can try to use a new color; note no overflow
+                            else
+                                max_color_to_try[v]=max_color_to_try[v-1];  // v has the same color range as v-1
+                        }
                         c[v]=max_color_to_try[v];
-                    
-                    //color_mask[c[v]]|=cur_mask;  // set v's bit for the new color --- this is not needed
-                }
+                    }
+                }  // v is a precolored vertex
                 
                 else  // v>=n, so we have colored all of the vertices
                 {
