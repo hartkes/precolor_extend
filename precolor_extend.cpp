@@ -125,7 +125,7 @@ long long int verify
     long long int count_precolorings=0;  // number of precolorings checked; long long is 64-bits
     long long int num_restarts_extension=0;  // number of precolorings where we could not reuse the previous extension, but had to restart the process
     
-    int reuse_extension=0;  // flag indicating if we should try to use the previous color extension after a new precoloring is made
+    bool reuse_extension=false;  // flag indicating if we should try to use the previous color extension after a new precoloring is made
     
     int odometer=0;  // for parallelization; keeps track of the number of nodes of the search tree at level splitlevel
     
@@ -202,7 +202,7 @@ long long int verify
     printf("\n");
     //*/
     
-    reuse_extension=0;  // no previous color extension to use
+    reuse_extension=false;  // no previous color extension to use
     
     if (splitlevel==n)  // a splitlevel of n indicates no parallelization
         mask_bit_set_splitlevel=0;
@@ -416,7 +416,7 @@ long long int verify
                     color_mask[c[v]]&=~cur_mask;  // clear v's bit for the current color
                     c[v]--;  // decrement color
                     
-                    reuse_extension=1;  // after we find the next precoloring, try to reuse this color extension
+                    reuse_extension=true;  // after we find the next precoloring, try to reuse this color extension
                     
                     /* We will keep the color_masks for the fast_forward.
                     // we need to clear the color_masks for the vertices from v to n
@@ -441,7 +441,7 @@ long long int verify
                 {
                     //printf("Reusing extension did not work, restarting from scratch\n");
                     // try again without reusing the previous color extension
-                    reuse_extension=0;
+                    reuse_extension=false;
                     // We do *not* advance v (and do not increment the c[v]), so that the auxiliary variables (such as max_num_colors) are correctly set.
                     
                     num_restarts_extension++;
