@@ -30,11 +30,11 @@
  */
 
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <unistd.h>  // to use getopt to parse the command line
 #include <climits>  // for INT_MAX
-#include <time.h>  // for reporting runtime
+#include <ctime>  // for reporting runtime
 #include "graph.h"
 
 
