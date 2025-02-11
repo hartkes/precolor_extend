@@ -20,7 +20,7 @@ $(name)_debug: $(name).cpp graph.h
 	$(CXX) -O5 -D DEBUG -o $(name)_debug $(name).cpp
 
 $(name)128_debug: $(name).cpp graph.h
-	$(CXX) -O5 -D USE128BITS=yes -D DEBUG -o $(name)_debug $(name).cpp
+	$(CXX) -O5 -D USE128BITS=yes -D DEBUG -o $(name)128_debug $(name).cpp
 
 clean:
 	rm $(name) $(name)128 $(name)_debug $(name)128_debug
