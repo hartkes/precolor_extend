@@ -435,7 +435,7 @@ long long int verify
                 if (reuse_extension)  // we have been trying to reuse the previous extension
                 {
                     #ifdef DEBUG
-                    if (debuglevel>=2)
+                    if (debuglevel>=3)
                     {
                         printf("Reusing extension failed, restarting.\n");
                     }
@@ -443,13 +443,14 @@ long long int verify
                     
                     // try again without reusing the previous color extension
                     reuse_extension=false;
-                    // We do *not* advance v (and do not increment the c[v]), so that the auxiliary variables (such as max_color_to_try) are correctly set.
-                    //FIXME: Maybe we should advance.  We need to check the interaction of this with the parallelization.  Note we don't need to deal with any auxiliary variables anymore.
+                    
+                    v++;
+                    cur_mask<<=1;
+                    c[v]=max_num_colors;  // no restriction on colors for extension vertices.
                     
                     num_restarts_extension++;
                     
-                    //NOTE: We don't need to clear color_mask, since it should have been handled when backtracking to this point.
-                    color_mask[c[v]]&=~cur_mask;  // clear v's bit for this color
+                    //NOTE: We don't need to clear color_mask, since we are keeping the color on v:=num_verts_to_precolor-1, and moving on to v:=num_verts_to_precolor.
 
                     continue;  // go to beginning of the main loop
                 }
