@@ -153,20 +153,21 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
                 # unless we had been trying to reuse the previous extension
                 if reuse_extension:
                     #THOUGHT: If we're counting precolorings, then no need to re-use extensions.
-                    #print("Reusing extension failed, trying to extend from scratch.")
+                    
+                    if debuglevel>=3:
+                        print("Reusing extension failed, trying to extend from scratch.")
+                    
                     reuse_extension=False
                     
+                    # advance to the next vertex, and start "fresh" to find an extension.
+                    v+=1
+                    
+                    # Set c[v].
+                    # We do not constrain the colors used for the extension vertices.
+                    c[v]=max_num_colors
+                    
                     continue  # continue the main loop, so c[v] is not changed
-                    
-                    # To match the C++ code, we keep v here but do not change c[v], and then we restart the main loop.
-                    #NOTE:  Do we want this to do this?
-# #                     # advance to the next vertex, and start "fresh" to find an extension.
-# #                     v+=1
-# #                     
-# #                     # Set c[v].
-# #                     # We do not constrain the colors used for the extension vertices.
-# #                     c[v]=max_num_colors
-                    
+                
                 else:  # we have failed to extend even when starting fresh
                     print(f"Bad precoloring! {c=}")
                     return False
