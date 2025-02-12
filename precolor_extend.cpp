@@ -273,6 +273,29 @@ long long int verify
                 c[v]--;  // we decrement colors
         }
         
+        #ifdef DEBUG
+        {   // block for local variables
+            // sanity test; make sure that c[v] and color_mask are consistent
+            BIT_MASK test_mask;
+            int upper_limit= v<num_verts_to_precolor ? n : v;
+            for (int u=0; u<upper_limit; u++)
+            {
+                test_mask=((BIT_MASK)1)<<u;
+                for (int j=1; j<=max_num_colors; j++)
+                    if (((color_mask[j]&test_mask)!=0) != (j==c[u]))
+                    {
+                        printf("Check 2 after color found: inconsistency in color_mask! v=%d u=%d color=%d c[u]=%d\n",v,u,j,c[u]);
+                        print_binary(color_mask[j],n);
+                        printf("\n");
+                        //exit(5);
+                    }
+            }
+        }
+        
+        // TODO: Add sanity check that max_color_to_try[v] is the maximum color used among vertices 0..v-1, plus 1 (if possible); and that all the colors from 1 to max_color_to_try[v] appear on vertices 0..v-1.
+        // This is not quite true.
+        #endif
+        
         
         if (good_color_found)
         {
@@ -429,6 +452,7 @@ long long int verify
             if (v==0)  // we have backtracked to the first vertex and thus are finished.  Note we do not change the color on vertex 0.
                 break;
             if (v==num_verts_to_precolor-1)
+                // FIXME: Change to a bit_mask test.
             {
                 // We have backtracked to a precoloring without finding an extension that is a proper coloring.
                 
@@ -468,7 +492,7 @@ long long int verify
                     // no point in finding too many bad precolorings
                 {
                     printf("Too many bad colorings, bombing out. count_precolorings=%lld\n",count_precolorings);
-                    break;
+                    break;  // main loop
                 }
             }
             
