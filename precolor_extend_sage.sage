@@ -35,11 +35,14 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
     
     odometer=0  # for parallelization
     
+    main_loop_counter=0  # for testing
+    
     while v>0:
         
-        if debuglevel>=2:
+        if debuglevel>=3:
+            main_loop_counter+=1
             #s=" ".join([f"{x}:{c[x]}" for x in range(v+1)])
-            print(f"StartMainLoop {v=:2} c=",end='')
+            print(f"StartMainLoop count={main_loop_counter:14} {v=:2} c=",end='')
             for i in range(v+1):
                 print(f"{i}:{c[i]} ",end='')
             print()  # newline

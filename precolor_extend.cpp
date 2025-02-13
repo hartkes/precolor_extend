@@ -181,6 +181,8 @@ long long int verify
     
     BIT_MASK mask_bit_set_splitlevel=0;  // mask with one bit set in position splitlevel
     
+    long long int main_loop_counter=0;
+    
     
     // initialization
     v=0;  // the first vertex is 0; we will color vertex 0 with color 1 and never change its color.
@@ -218,9 +220,10 @@ long long int verify
         
         
         #ifdef DEBUG
-        if (debuglevel>=2)
+        if (debuglevel>=3)
         {
-            printf("StartMainLoop v=%2d c=",v);
+            main_loop_counter++;
+            printf("StartMainLoop count=%14lld v=%2d c=",main_loop_counter,v);
             for (int i=0; i<=v; i++)
                 printf("%d:%d ",i,c[i]);
             printf("\n");
