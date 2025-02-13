@@ -413,17 +413,18 @@ long long int verify
                 {
                     // we have colored (properly) all of the vertices, and so have a good coloring
                     
+                    count_precolorings++;
+                    
                     #ifdef DEBUG
-                    if (debuglevel>=1)
+                    if (debuglevel>=2)
                     {
-                        printf("PrecoloringExtended c=");
+                        printf("PrecoloringExtended count=%10lld c=",count_precolorings);
                         for (int i=0; i<num_verts_to_precolor; i++)
                             printf("%d:%d ",i,c[i]);
                         printf("\n");
                     }
                     #endif
                     
-                    count_precolorings++;
                     /*
                     if ((count_precolorings&0xffffff)==0)  // 0xfffff is 2^30==1048575
                     {

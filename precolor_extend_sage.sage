@@ -102,8 +102,10 @@ def precoloring_extension(max_num_colors,num_verts_to_precolor,G,
             
             if v==n:  # all vertices have been colored, we have successfully extended the precoloring
                 count_precolorings+=1
-                #s=", ".join([f"{x}:{c[x]}" for x in range(num_verts_to_precolor)])
-                #print(f"Good precoloring, {count_precolorings=:5} c={s}")
+                
+                if debuglevel>=2:
+                    s=", ".join([f"{x}:{c[x]}" for x in range(num_verts_to_precolor)])
+                    print(f"PrecoloringExtended count={count_precolorings:10} c={s} ")
                 
                 v=num_verts_to_precolor-1
                 c[v]-=1  # advance the color
